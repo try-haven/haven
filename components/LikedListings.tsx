@@ -14,6 +14,7 @@ interface LikedListingsProps {
 export default function LikedListings({ likedListings, onBack, onRemoveLike }: LikedListingsProps) {
   const [selectedListing, setSelectedListing] = useState<ApartmentListing | null>(null);
   const [imageIndex, setImageIndex] = useState(0);
+  const [imageError, setImageError] = useState(false);
 
   if (likedListings.length === 0) {
     return (
@@ -74,12 +75,37 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike }: L
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
             {/* Image Carousel */}
             <div className="relative h-96 bg-gray-200 dark:bg-gray-700">
-              <Image
-                src={selectedListing.images[imageIndex]}
-                alt={selectedListing.title}
-                fill
-                className="object-cover"
-              />
+              {!imageError && selectedListing.images[imageIndex] ? (
+                <Image
+                  src={selectedListing.images[imageIndex]}
+                  alt={selectedListing.title}
+                  fill
+                  className="object-cover"
+                  onError={() => setImageError(true)}
+                  unoptimized
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900">
+                  <div className="text-center p-8">
+                    <svg
+                      className="w-16 h-16 mx-auto mb-4 text-indigo-400 dark:text-indigo-300"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                      />
+                    </svg>
+                    <p className="text-gray-600 dark:text-gray-300 font-medium">
+                      {selectedListing.title}
+                    </p>
+                  </div>
+                </div>
+              )}
               
               {selectedListing.images.length > 1 && (
                 <>
@@ -95,7 +121,10 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike }: L
                   </div>
                   
                   <button
-                    onClick={() => setImageIndex((prev) => (prev - 1 + selectedListing.images.length) % selectedListing.images.length)}
+                    onClick={() => {
+                      setImageIndex((prev) => (prev - 1 + selectedListing.images.length) % selectedListing.images.length);
+                      setImageError(false);
+                    }}
                     className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 transition-colors"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,7 +132,10 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike }: L
                     </svg>
                   </button>
                   <button
-                    onClick={() => setImageIndex((prev) => (prev + 1) % selectedListing.images.length)}
+                    onClick={() => {
+                      setImageIndex((prev) => (prev + 1) % selectedListing.images.length);
+                      setImageError(false);
+                    }}
                     className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 transition-colors"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -215,16 +247,36 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike }: L
                 onClick={() => {
                   setSelectedListing(listing);
                   setImageIndex(0);
+                  setImageError(false);
                 }}
                 className="cursor-pointer"
               >
                 <div className="relative h-48 bg-gray-200 dark:bg-gray-700">
-                  <Image
-                    src={listing.images[0]}
-                    alt={listing.title}
-                    fill
-                    className="object-cover"
-                  />
+                  {listing.images[0] ? (
+                    <Image
+                      src={listing.images[0]}
+                      alt={listing.title}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900">
+                      <svg
+                        className="w-8 h-8 text-indigo-400 dark:text-indigo-300"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                        />
+                      </svg>
+                    </div>
+                  )}
                 </div>
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-2">

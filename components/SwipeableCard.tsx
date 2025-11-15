@@ -25,6 +25,7 @@ export default function SwipeableCard({
   const [imageIndex, setImageIndex] = useState(0);
   const [exitX, setExitX] = useState(0);
   const [hasTriggered, setHasTriggered] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-25, 25]);
@@ -57,8 +58,15 @@ export default function SwipeableCard({
       setHasTriggered(false);
       setExitX(0);
       x.set(0);
+      setImageIndex(0);
+      setImageError(false);
     }
   }, [index, x]);
+
+  // Reset image error when image index changes
+  useEffect(() => {
+    setImageError(false);
+  }, [imageIndex]);
 
   const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (Math.abs(info.offset.x) > 100) {
@@ -111,13 +119,38 @@ export default function SwipeableCard({
         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden">
           {/* Image Carousel */}
           <div className="relative h-96 bg-gray-200 dark:bg-gray-700">
-            <Image
-              src={listing.images[imageIndex]}
-              alt={listing.title}
-              fill
-              className="object-cover"
-              priority={index === 0}
-            />
+            {!imageError && listing.images[imageIndex] ? (
+              <Image
+                src={listing.images[imageIndex]}
+                alt={listing.title}
+                fill
+                className="object-cover"
+                priority={index === 0}
+                onError={() => setImageError(true)}
+                unoptimized
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900">
+                <div className="text-center p-8">
+                  <svg
+                    className="w-16 h-16 mx-auto mb-4 text-indigo-400 dark:text-indigo-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                    />
+                  </svg>
+                  <p className="text-gray-600 dark:text-gray-300 font-medium">
+                    {listing.title}
+                  </p>
+                </div>
+              </div>
+            )}
             
             {/* Image Indicators */}
             {listing.images.length > 1 && (
