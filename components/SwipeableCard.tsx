@@ -26,6 +26,7 @@ export default function SwipeableCard({
   const [exitX, setExitX] = useState(0);
   const [hasTriggered, setHasTriggered] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [pendingSwipe, setPendingSwipe] = useState<"left" | "right" | null>(null);
 
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-25, 25]);
@@ -41,14 +42,19 @@ export default function SwipeableCard({
       const direction = triggerSwipe === "right" ? 200 : -200;
       setHasTriggered(true);
       setExitX(direction);
+      setPendingSwipe(triggerSwipe);
       // Animate the x motion value smoothly
       animate(x, direction, {
         type: "spring",
         stiffness: 300,
         damping: 30,
       });
-      // Call onSwipe immediately so state updates right away
-      onSwipe(triggerSwipe);
+      // Call onSwipe early so state updates happen in parallel with animation
+      // This allows the next card to start scaling up while current card animates out
+      // Small delay ensures animation has started before state updates
+      setTimeout(() => {
+        onSwipe(triggerSwipe);
+      }, 50); // Reduced delay for faster state updates
     }
   }, [triggerSwipe, isTriggeredCard, onSwipe, x, exitX, hasTriggered]);
 
@@ -60,6 +66,7 @@ export default function SwipeableCard({
       x.set(0);
       setImageIndex(0);
       setImageError(false);
+      setPendingSwipe(null);
     }
   }, [index, x]);
 
@@ -94,10 +101,8 @@ export default function SwipeableCard({
       className="absolute inset-0 flex items-center justify-center pointer-events-none"
       style={{
         x,
-        y: yOffset,
         rotate,
         opacity,
-        scale,
         zIndex: total - index,
         pointerEvents: index === 0 ? "auto" : "none",
       }}
@@ -107,11 +112,19 @@ export default function SwipeableCard({
       animate={{
         x: exitX,
         opacity: exitX !== 0 ? 0 : 1,
+        scale: scale,
+        y: yOffset,
       }}
       transition={{
         type: "spring",
         stiffness: 300,
         damping: 30,
+      }}
+      onAnimationComplete={() => {
+        // Clear pending swipe after animation completes
+        if (pendingSwipe) {
+          setPendingSwipe(null);
+        }
       }}
       initial={false}
     >
