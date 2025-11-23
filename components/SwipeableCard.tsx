@@ -7,6 +7,7 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useUser } from "@/contexts/UserContext";
 import { generateAnonymousNickname } from "@/lib/nicknames";
+import { textStyles, badgeStyles, inputStyles } from "@/lib/styles";
 
 // Dynamically import the map component to avoid SSR issues
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
@@ -42,28 +43,41 @@ export default function SwipeableCard({
   const [originalRating, setOriginalRating] = useState<number>(0);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
-  const [reviews, setReviews] = useState<Review[]>(() => {
+  const [reviews, setReviews] = useState<Review[]>(listing.reviews || []);
+  const [userRatingData, setUserRatingData] = useState<{ rating: number; userId: string } | null>(null);
+  const cardContentRef = useRef<HTMLDivElement>(null);
+  const hasReviewed = hasReviewedListing(listing.id);
+  const hasUserReview = user ? reviews.some(r => r.userName === user.username) : false;
+
+  // Load reviews and user rating from localStorage after mount (client-side only)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     // Load reviews from localStorage
-    const storedReviews = localStorage.getItem(`haven_listing_reviews_${listing.id}`);
-    return storedReviews ? JSON.parse(storedReviews) : (listing.reviews || []);
-  });
-  const [userRatingData, setUserRatingData] = useState<{ rating: number; userId: string } | null>(() => {
-    // Load user's rating if exists - check localStorage directly since user might not be loaded yet
+    try {
+      const storedReviews = localStorage.getItem(`haven_listing_reviews_${listing.id}`);
+      if (storedReviews) {
+        const parsedReviews = JSON.parse(storedReviews);
+        setReviews(parsedReviews);
+      }
+    } catch (error) {
+      console.error("Error loading reviews from localStorage:", error);
+    }
+
+    // Load user's rating if exists
     try {
       const storedUser = localStorage.getItem("haven_user");
       if (storedUser) {
         const userData = JSON.parse(storedUser);
         const stored = localStorage.getItem(`haven_rating_${listing.id}_${userData.username}`);
-        return stored ? JSON.parse(stored) : null;
+        if (stored) {
+          setUserRatingData(JSON.parse(stored));
+        }
       }
     } catch (error) {
       // Ignore errors
     }
-    return null;
-  });
-  const cardContentRef = useRef<HTMLDivElement>(null);
-  const hasReviewed = hasReviewedListing(listing.id);
-  const hasUserReview = user ? reviews.some(r => r.userName === user.username) : false;
+  }, [listing.id]);
 
   // Calculate average rating from reviews
   const averageRating = reviews.length > 0
@@ -325,20 +339,20 @@ export default function SwipeableCard({
               <span>{listing.sqft.toLocaleString()} sqft</span>
             </div>
 
-            <p className="text-gray-700 dark:text-gray-300 mb-4 line-clamp-2">{listing.description}</p>
+            <p className={textStyles.bodyClamp2}>{listing.description}</p>
 
             {/* Amenities */}
             <div className="flex flex-wrap gap-2 mb-4">
               {listing.amenities.slice(0, 4).map((amenity, i) => (
                 <span
                   key={i}
-                  className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium"
+                  className={badgeStyles.default}
                 >
                   {amenity}
                 </span>
               ))}
               {listing.amenities.length > 4 && (
-                <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium">
+                <span className={badgeStyles.default}>
                   +{listing.amenities.length - 4} more
                 </span>
               )}
@@ -429,7 +443,7 @@ export default function SwipeableCard({
               {showReviewForm && user && (
                 <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                   <div className="mb-3">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                    <label className={inputStyles.labelBlock}>
                       Your Rating {userRating > 0 && `(${userRating} stars)`}
                     </label>
                     <div className="flex items-center gap-1">
@@ -455,7 +469,7 @@ export default function SwipeableCard({
                     </div>
                   </div>
                   <div className="mb-3">
-                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <label className={inputStyles.labelFlex}>
                       <input
                         type="checkbox"
                         checked={isAnonymous}
@@ -482,11 +496,11 @@ export default function SwipeableCard({
                           const filteredReviews = allReviews.filter(r => r.userName !== user.username);
                           setReviews(filteredReviews);
                           localStorage.setItem(`haven_listing_reviews_${listing.id}`, JSON.stringify(filteredReviews));
-                          
+
                           // Remove rating
                           localStorage.removeItem(`haven_rating_${listing.id}_${user.username}`);
                           setUserRatingData(null);
-                          
+
                           // Remove from reviewed listings
                           const reviewedListings = localStorage.getItem(`haven_reviews_${user.username}`);
                           if (reviewedListings) {
@@ -494,7 +508,7 @@ export default function SwipeableCard({
                             const filtered = reviews.filter(id => id !== listing.id);
                             localStorage.setItem(`haven_reviews_${user.username}`, JSON.stringify(filtered));
                           }
-                          
+
                           // Reset form
                           setUserReview("");
                           setOriginalReview("");
@@ -525,7 +539,7 @@ export default function SwipeableCard({
                           // Determine what needs to be updated
                           const ratingChanged = userRating !== originalRating;
                           const reviewChanged = userReview.trim() !== originalReview;
-                          
+
                           // Update review if it changed or exists
                           if (reviewChanged || (userReview.trim() && !hasReviewed)) {
                             const listingReviews = localStorage.getItem(`haven_listing_reviews_${listing.id}`);
@@ -560,13 +574,13 @@ export default function SwipeableCard({
                           // Update original values
                           setOriginalRating(userRating);
                           setOriginalReview(userReview.trim());
-                          
+
                           // Reset form
                           setUserReview("");
                           setUserRating(0);
                           setIsAnonymous(false);
                           setShowReviewForm(false);
-                          
+
                           // Reload reviews to update average
                           const storedReviews = localStorage.getItem(`haven_listing_reviews_${listing.id}`);
                           setReviews(storedReviews ? JSON.parse(storedReviews) : []);
@@ -617,7 +631,7 @@ export default function SwipeableCard({
                             </div>
                           </div>
                         </div>
-                        <p className="text-gray-700 dark:text-gray-300 mt-2">{review.comment}</p>
+                        <p className={`${textStyles.body} mt-2`}>{review.comment}</p>
                       </div>
                     );
                   })}

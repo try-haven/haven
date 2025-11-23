@@ -3,8 +3,7 @@
 import { ApartmentListing, Review } from "@/lib/data";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
-import DarkModeToggle from "./DarkModeToggle";
-import HavenLogo from "./HavenLogo";
+import SharedNavbar from "./SharedNavbar";
 import { useUser } from "@/contexts/UserContext";
 import { generateAnonymousNickname } from "@/lib/nicknames";
 import dynamic from "next/dynamic";
@@ -91,21 +90,27 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
     if (!selectedListing || !cardContentRef.current) return;
 
     let ticking = false;
+    let scrollTimeout: NodeJS.Timeout;
 
     const handleScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
           const currentScrollY = cardContentRef.current?.scrollTop || 0;
+          const scrollDelta = Math.abs(currentScrollY - lastScrollY);
           
-          if (currentScrollY > lastScrollY && currentScrollY > 20) {
-            // Scrolling down - hide navbar
-            setIsNavbarVisible(false);
-          } else if (currentScrollY < lastScrollY || currentScrollY <= 20) {
-            // Scrolling up or near top - show navbar
-            setIsNavbarVisible(true);
+          // Only hide/show if scroll delta is significant (less aggressive)
+          if (scrollDelta > 10) {
+            if (currentScrollY > lastScrollY && currentScrollY > 100) {
+              // Scrolling down - hide navbar
+              setIsNavbarVisible(false);
+            } else if (currentScrollY < lastScrollY || currentScrollY <= 50) {
+              // Scrolling up or near top - show navbar
+              setIsNavbarVisible(true);
+            }
+            
+            setLastScrollY(currentScrollY);
           }
           
-          setLastScrollY(currentScrollY);
           ticking = false;
         });
         ticking = true;
@@ -117,6 +122,7 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
     
     return () => {
       cardElement?.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout) clearTimeout(scrollTimeout);
     };
   }, [selectedListing, lastScrollY]);
 
@@ -186,40 +192,10 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8">
         <div className="container mx-auto px-6 max-w-4xl">
           <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <HavenLogo size="sm" showAnimation={false} />
-              <h1 className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Haven</h1>
-            </div>
-            <div className="flex gap-4 items-center">
-              <DarkModeToggle />
-              {onBackToHome && (
-                <button
-                  onClick={onBackToHome}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                >
-                  Back to Home
-                </button>
-              )}
-              <button
-                onClick={onBack}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-              >
-                Back to Swiping
-              </button>
-              <button
-                onClick={() => {
-                  logOut();
-                  if (onBackToHome) {
-                    onBackToHome();
-                  } else {
-                    onBack();
-                  }
-                }}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-              >
-                Log Out
-              </button>
-            </div>
+            <SharedNavbar
+              onBackToHome={onBackToHome}
+              showBackToHome={!!onBackToHome}
+            />
           </div>
           <div className="flex flex-col items-center justify-center min-h-[600px] text-center p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
             <div className="text-6xl mb-4">💔</div>
@@ -280,7 +256,7 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
     };
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <div className="container mx-auto px-6 max-w-4xl">
           <div 
             className={`fixed top-0 left-0 right-0 z-40 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-transform duration-300 ${
@@ -288,48 +264,24 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
             }`}
           >
             <div className="container mx-auto px-6 max-w-4xl py-4">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => setSelectedListing(null)}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Back to List
-                </button>
-                <div className="flex items-center gap-3">
-                  <HavenLogo size="sm" showAnimation={false} />
-                  <h1 className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Haven</h1>
-                </div>
-                <div className="flex gap-4 items-center">
-                  <DarkModeToggle />
-                  {onBackToHome && (
-                    <button
-                      onClick={onBackToHome}
-                      className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                    >
-                      Back to Home
-                    </button>
-                  )}
+              <SharedNavbar
+                leftButton={
                   <button
-                    onClick={() => {
-                      logOut();
-                      if (onBackToHome) {
-                        onBackToHome();
-                      } else {
-                        setSelectedListing(null);
-                      }
-                    }}
-                    className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                    onClick={() => setSelectedListing(null)}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-2"
                   >
-                    Log Out
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Back to List
                   </button>
-                </div>
-              </div>
+                }
+                onBackToHome={onBackToHome}
+                showBackToHome={!!onBackToHome}
+              />
             </div>
           </div>
-          <div className="mb-8 h-16"></div>
+          <div className={`transition-all duration-300 ${isNavbarVisible ? 'mb-8 h-16' : 'mb-0 h-0'}`}></div>
 
           <div className="relative">
             {/* Left Navigation Arrow */}
@@ -367,7 +319,9 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
 
             <div 
               ref={cardContentRef}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-y-auto overscroll-contain scrollbar-hide h-[calc(100vh-8rem)]"
+              className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-y-auto overscroll-contain scrollbar-hide transition-all duration-300 ${
+                isNavbarVisible ? 'h-[calc(100vh-8rem)]' : 'h-[calc(100vh-0.5rem)]'
+              }`}
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
             {/* Image Carousel */}
@@ -876,40 +830,10 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8">
       <div className="container mx-auto px-6 max-w-6xl">
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <HavenLogo size="sm" showAnimation={false} />
-            <h1 className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Haven</h1>
-          </div>
-          <div className="flex gap-4 items-center">
-            <DarkModeToggle />
-            {onBackToHome && (
-              <button
-                onClick={onBackToHome}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-              >
-                Back to Home
-              </button>
-            )}
-            <button
-              onClick={onBack}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-            >
-              Back to Swiping
-            </button>
-            <button
-              onClick={() => {
-                logOut();
-                if (onBackToHome) {
-                  onBackToHome();
-                } else {
-                  onBack();
-                }
-              }}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-            >
-              Log Out
-            </button>
-          </div>
+          <SharedNavbar
+            onBackToHome={onBackToHome}
+            showBackToHome={!!onBackToHome}
+          />
         </div>
 
         <div className="mb-6">

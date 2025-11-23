@@ -3,12 +3,12 @@
 import { ApartmentListing, Review } from "@/lib/data";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import DarkModeToggle from "./DarkModeToggle";
-import HavenLogo from "./HavenLogo";
+import SharedNavbar from "./SharedNavbar";
 import { useUser } from "@/contexts/UserContext";
 import { fakeListings } from "@/lib/data";
 import { generateAnonymousNickname } from "@/lib/nicknames";
 import dynamic from "next/dynamic";
+import { textStyles } from "@/lib/styles";
 
 // Dynamically import the map component to avoid SSR issues
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
@@ -89,40 +89,10 @@ export default function ReviewedListings({ onBack, onBackToHome }: ReviewedListi
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8">
         <div className="container mx-auto px-6 max-w-4xl">
           <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <HavenLogo size="sm" showAnimation={false} />
-              <h1 className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Haven</h1>
-            </div>
-            <div className="flex gap-4 items-center">
-              <DarkModeToggle />
-              {onBackToHome && (
-                <button
-                  onClick={onBackToHome}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                >
-                  Back to Home
-                </button>
-              )}
-              <button
-                onClick={onBack}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-              >
-                Back to Swiping
-              </button>
-              <button
-                onClick={() => {
-                  logOut();
-                  if (onBackToHome) {
-                    onBackToHome();
-                  } else {
-                    onBack();
-                  }
-                }}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-              >
-                Log Out
-              </button>
-            </div>
+            <SharedNavbar
+              onBackToHome={onBackToHome}
+              showBackToHome={!!onBackToHome}
+            />
           </div>
           <div className="flex flex-col items-center justify-center min-h-[600px] text-center p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
             <div className="text-6xl mb-4">📝</div>
@@ -149,54 +119,31 @@ export default function ReviewedListings({ onBack, onBackToHome }: ReviewedListi
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8">
         <div className="container mx-auto px-6 max-w-4xl">
           <div className="flex items-center justify-between mb-8">
-            <button
-              onClick={() => {
-                setSelectedListing(null);
-                setSelectedReview(null);
-                setCoordinates(null);
-                setShowEditForm(false);
-                setUserReview("");
-                setOriginalReview("");
-                setUserRating(0);
-                setOriginalRating(0);
-                setIsAnonymous(false);
-              }}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to List
-            </button>
-            <div className="flex items-center gap-3">
-              <HavenLogo size="sm" showAnimation={false} />
-              <h1 className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Haven</h1>
-            </div>
-            <div className="flex gap-4 items-center">
-              <DarkModeToggle />
-              {onBackToHome && (
+            <SharedNavbar
+              leftButton={
                 <button
-                  onClick={onBackToHome}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                >
-                  Back to Home
-                </button>
-              )}
-              <button
-                onClick={() => {
-                  logOut();
-                  if (onBackToHome) {
-                    onBackToHome();
-                  } else {
+                  onClick={() => {
                     setSelectedListing(null);
                     setSelectedReview(null);
-                  }
-                }}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-              >
-                Log Out
-              </button>
-            </div>
+                    setCoordinates(null);
+                    setShowEditForm(false);
+                    setUserReview("");
+                    setOriginalReview("");
+                    setUserRating(0);
+                    setOriginalRating(0);
+                    setIsAnonymous(false);
+                  }}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to List
+                </button>
+              }
+              onBackToHome={onBackToHome}
+              showBackToHome={!!onBackToHome}
+            />
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
@@ -575,40 +522,10 @@ export default function ReviewedListings({ onBack, onBackToHome }: ReviewedListi
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8">
       <div className="container mx-auto px-6 max-w-6xl">
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <HavenLogo size="sm" showAnimation={false} />
-            <h1 className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Haven</h1>
-          </div>
-          <div className="flex gap-4 items-center">
-            <DarkModeToggle />
-            {onBackToHome && (
-              <button
-                onClick={onBackToHome}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-              >
-                Back to Home
-              </button>
-            )}
-            <button
-              onClick={onBack}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-            >
-              Back to Swiping
-            </button>
-            <button
-              onClick={() => {
-                logOut();
-                if (onBackToHome) {
-                  onBackToHome();
-                } else {
-                  onBack();
-                }
-              }}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-            >
-              Log Out
-            </button>
-          </div>
+          <SharedNavbar
+            onBackToHome={onBackToHome}
+            showBackToHome={!!onBackToHome}
+          />
         </div>
 
         <div className="mb-6">
@@ -686,7 +603,7 @@ export default function ReviewedListings({ onBack, onBackToHome }: ReviewedListi
                     {new Date(review.date).toLocaleDateString()}
                   </span>
                 </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{review.comment}</p>
+                <p className={textStyles.bodySmallClamp2}>{review.comment}</p>
               </div>
             </div>
           ))}

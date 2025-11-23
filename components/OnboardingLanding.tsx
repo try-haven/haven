@@ -1,10 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DarkModeToggle from "./DarkModeToggle";
 import HavenLogo from "./HavenLogo";
 import { useUser } from "@/contexts/UserContext";
+import { textStyles, inputStyles, buttonStyles } from "@/lib/styles";
 
 interface OnboardingLandingProps {
   onSignUp: () => void;
@@ -20,9 +21,15 @@ export default function OnboardingLanding({ onSignUp, onLogIn, onBack }: Onboard
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  // If already logged in, proceed to next step
+  // If already logged in, proceed to login flow (not sign up)
+  useEffect(() => {
+    if (isLoggedIn) {
+      onLogIn();
+    }
+  }, [isLoggedIn, onLogIn]);
+
+  // If already logged in, don't render the form
   if (isLoggedIn) {
-    onSignUp();
     return null;
   }
 
@@ -63,9 +70,9 @@ export default function OnboardingLanding({ onSignUp, onLogIn, onBack }: Onboard
 
       {/* Back Button */}
       {onBack && (
-        <button
+          <button
           onClick={onBack}
-          className="absolute top-6 left-6 text-indigo-600 dark:text-indigo-300 hover:text-indigo-700 dark:hover:text-indigo-200 transition-colors flex items-center gap-2"
+          className={`absolute top-6 left-6 ${buttonStyles.icon}`}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -88,7 +95,7 @@ export default function OnboardingLanding({ onSignUp, onLogIn, onBack }: Onboard
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="text-5xl font-bold text-indigo-600 dark:text-indigo-400 mb-4"
+        className={`${textStyles.headingBrand} mb-4`}
       >
         Haven
       </motion.h1>
@@ -98,7 +105,7 @@ export default function OnboardingLanding({ onSignUp, onLogIn, onBack }: Onboard
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
-        className="text-gray-700 dark:text-white text-lg mb-12 text-center"
+        className={textStyles.tagline}
       >
         Search. Connect. Move.
       </motion.p>
@@ -114,7 +121,7 @@ export default function OnboardingLanding({ onSignUp, onLogIn, onBack }: Onboard
           {isSignUp && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className={inputStyles.label}>
                   Email
                 </label>
                 <input
@@ -122,12 +129,12 @@ export default function OnboardingLanding({ onSignUp, onLogIn, onBack }: Onboard
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your.email@example.com"
-                  className="w-full px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className={inputStyles.standard}
                   required={isSignUp}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className={inputStyles.label}>
                   Username
                 </label>
                 <input
@@ -135,10 +142,10 @@ export default function OnboardingLanding({ onSignUp, onLogIn, onBack }: Onboard
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Choose a username"
-                  className="w-full px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className={inputStyles.standard}
                   required={isSignUp}
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p className={`${textStyles.helperWithMargin}`}>
                   This will be displayed in your reviews and comments
                 </p>
               </div>
@@ -151,7 +158,7 @@ export default function OnboardingLanding({ onSignUp, onLogIn, onBack }: Onboard
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Username or Email"
-                className="w-full px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={inputStyles.standard}
                 required
               />
             </div>
@@ -162,16 +169,16 @@ export default function OnboardingLanding({ onSignUp, onLogIn, onBack }: Onboard
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
-              className="w-full px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className={inputStyles.standard}
               required
             />
           </div>
           {error && (
-            <div className="text-red-500 text-sm text-center">{error}</div>
+            <div className={textStyles.error}>{error}</div>
           )}
           <button
             type="submit"
-            className="w-full py-4 bg-indigo-600 dark:bg-indigo-400 text-white dark:text-gray-900 rounded-xl font-semibold text-lg hover:bg-indigo-700 dark:hover:bg-indigo-300 transition-colors"
+            className={buttonStyles.primaryFull}
           >
             {isSignUp ? "Sign Up" : "Log In"}
           </button>
@@ -182,7 +189,7 @@ export default function OnboardingLanding({ onSignUp, onLogIn, onBack }: Onboard
               setIsSignUp(!isSignUp);
               setError("");
             }}
-            className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
+            className={buttonStyles.link}
           >
             {isSignUp ? "Already have an account? Log in" : "Don't have an account? Sign up"}
           </button>

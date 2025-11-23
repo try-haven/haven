@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import DarkModeToggle from "./DarkModeToggle";
 import HavenLogo from "./HavenLogo";
+import { textStyles, buttonStyles, containerStyles, layoutStyles } from "@/lib/styles";
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -11,31 +12,31 @@ interface LandingPageProps {
 
 export default function LandingPage({ onGetStarted }: LandingPageProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className={containerStyles.page}>
       {/* Navigation */}
-      <nav className="container mx-auto px-6 py-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <nav className={layoutStyles.containerNav}>
+        <div className={layoutStyles.flexBetween}>
+          <div className={layoutStyles.flexGap}>
             <HavenLogo size="sm" showAnimation={false} />
-            <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">Haven</div>
+            <div className={textStyles.headingBrandSmall}>Haven</div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className={layoutStyles.flexGap4}>
             <Link
               href="#features"
-              className="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              className={buttonStyles.nav}
             >
               Features
             </Link>
             <Link
               href="#about"
-              className="text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              className={buttonStyles.nav}
             >
               About
             </Link>
             <DarkModeToggle />
             <button
               onClick={onGetStarted}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors border border-gray-300 dark:border-gray-600 rounded-full hover:border-indigo-600 dark:hover:border-indigo-400"
+              className={buttonStyles.navBordered}
             >
               Get Started
             </button>
@@ -44,20 +45,20 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
       </nav>
 
       {/* Hero Section */}
-      <div className="container mx-auto px-6 py-20">
+      <div className={layoutStyles.containerHero}>
         <div className="max-w-4xl mx-auto text-center">
           <motion.h1
-            className="text-6xl md:text-7xl font-bold text-gray-900 dark:text-white mb-6"
+            className="text-6xl md:text-7xl font-bold mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            Find Your Perfect
-            <span className="block text-indigo-600 dark:text-indigo-400">Apartment</span>
+            <span className={textStyles.heading}>Find Your Perfect</span>
+            <span className={`block ${textStyles.brand}`}>Apartment</span>
           </motion.h1>
           
           <motion.p
-            className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto"
+            className={textStyles.subtitle}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
@@ -73,11 +74,11 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
           >
             <button
               onClick={onGetStarted}
-              className="px-8 py-4 bg-indigo-600 text-white rounded-full text-lg font-semibold hover:bg-indigo-700 transition-colors shadow-lg hover:shadow-xl"
+              className={buttonStyles.primary}
             >
               Start Swiping
             </button>
-            <button className="px-8 py-4 bg-white text-indigo-600 rounded-full text-lg font-semibold hover:bg-gray-50 transition-colors border-2 border-indigo-600">
+            <button className={buttonStyles.secondary}>
               Upload Listing
             </button>
           </motion.div>

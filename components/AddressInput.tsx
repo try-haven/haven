@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
+import { textStyles, buttonStyles, containerStyles, layoutStyles, inputStyles } from "@/lib/styles";
 
 // Dynamically import the map component to avoid SSR issues
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
@@ -202,7 +203,7 @@ export default function AddressInput({ onNext, onBack, initialAddress }: Address
   };
 
   return (
-    <div className="min-h-screen bg-indigo-50 dark:bg-gray-900 flex flex-col py-8 px-6">
+    <div className={`${containerStyles.pageIndigo} flex flex-col py-8 px-6`}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -210,27 +211,27 @@ export default function AddressInput({ onNext, onBack, initialAddress }: Address
         className="w-full max-w-4xl mx-auto"
       >
         {/* Header */}
-        <h2 className="text-indigo-300 dark:text-indigo-300 text-xl text-center mb-6">
+        <h2 className={`${textStyles.brandLight} text-xl text-center mb-6`}>
           {initialAddress ? "Update your desired neighborhood or work address" : "Enter your desired neighborhood or work address"}
         </h2>
 
         {/* Current Address Display - More Prominent */}
         {initialAddress && (
-          <div className="mb-6 p-6 bg-white dark:bg-gray-800 rounded-xl border-2 border-indigo-300 dark:border-indigo-600 shadow-lg">
-            <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">Current Address</p>
-            <p className="text-lg text-gray-900 dark:text-white font-bold">{initialAddress}</p>
+          <div className={`mb-6 ${containerStyles.sectionHighlight}`}>
+            <p className={inputStyles.labelSmall}>Current Address</p>
+            <p className={`${textStyles.heading} text-lg font-bold`}>{initialAddress}</p>
           </div>
         )}
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className={layoutStyles.grid2Col}>
           {/* Left side - Input and suggestions */}
-          <div className="space-y-4">
+          <div className={layoutStyles.spaceY4}>
             {/* Current Location Button */}
             <button
               type="button"
               onClick={handleGetCurrentLocation}
               disabled={isGettingLocation}
-              className="w-full py-3 px-4 bg-indigo-500 dark:bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-600 dark:hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className={buttonStyles.location}
             >
               {isGettingLocation ? (
                 <>
@@ -248,18 +249,18 @@ export default function AddressInput({ onNext, onBack, initialAddress }: Address
               )}
             </button>
 
-            <div className="text-center text-indigo-200 dark:text-indigo-300 text-sm">or</div>
+            <div className={`text-center ${textStyles.brandLight} text-sm`}>or</div>
 
             {/* Confirmation Dialog */}
             {showConfirm && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Confirm Changes</h3>
+              <div className={containerStyles.dialogOverlay}>
+                <div className={containerStyles.dialog}>
+                  <h3 className={`${textStyles.headingSmall} mb-4`}>Confirm Changes</h3>
                   <div className="mb-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Current:</p>
-                    <p className="text-gray-900 dark:text-white">{initialAddress || "None"}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 mt-4">New:</p>
-                    <p className="text-gray-900 dark:text-white">{newAddress}</p>
+                    <p className={`${textStyles.bodySmall} mb-2`}>Current:</p>
+                    <p className={textStyles.heading}>{initialAddress || "None"}</p>
+                    <p className={`${textStyles.bodySmall} mb-2 mt-4`}>New:</p>
+                    <p className={textStyles.heading}>{newAddress}</p>
                   </div>
                   <div className="flex gap-3">
                     <button
@@ -267,13 +268,13 @@ export default function AddressInput({ onNext, onBack, initialAddress }: Address
                         setShowConfirm(false);
                         setAddress(initialAddress || "");
                       }}
-                      className="flex-1 py-2 px-4 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                      className={buttonStyles.secondaryCancel}
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleConfirm}
-                      className="flex-1 py-2 px-4 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+                      className={buttonStyles.primaryConfirm}
                     >
                       Confirm
                     </button>
@@ -284,7 +285,7 @@ export default function AddressInput({ onNext, onBack, initialAddress }: Address
 
 
             {/* Input Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className={layoutStyles.spaceY4}>
               <div className="relative">
                 <input
                   ref={inputRef}
@@ -300,7 +301,7 @@ export default function AddressInput({ onNext, onBack, initialAddress }: Address
                     }
                   }}
                   placeholder="Search for an address..."
-                  className="w-full px-4 py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className={inputStyles.standardLarge}
                   autoFocus
                 />
                 
@@ -319,7 +320,7 @@ export default function AddressInput({ onNext, onBack, initialAddress }: Address
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="absolute z-50 w-full mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto"
+                      className={containerStyles.dropdown}
                     >
                       {suggestions.map((suggestion, index) => {
                         const formattedAddress = formatAddress(suggestion);
@@ -328,9 +329,9 @@ export default function AddressInput({ onNext, onBack, initialAddress }: Address
                             key={index}
                             type="button"
                             onClick={() => handleSuggestionClick(suggestion)}
-                            className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                            className={containerStyles.dropdownItem}
                           >
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            <div className={`${textStyles.bodySmall} font-medium`}>
                               {formattedAddress}
                             </div>
                           </button>
@@ -347,7 +348,7 @@ export default function AddressInput({ onNext, onBack, initialAddress }: Address
                   <button
                     type="button"
                     onClick={onBack}
-                    className="flex-1 py-3 text-indigo-300 dark:text-indigo-300 hover:text-indigo-200 dark:hover:text-indigo-200 transition-colors"
+                    className={buttonStyles.backText}
                   >
                     Back
                   </button>
@@ -359,7 +360,7 @@ export default function AddressInput({ onNext, onBack, initialAddress }: Address
                     handleNext();
                   }}
                   disabled={!address.trim() && !initialAddress}
-                  className="flex-1 py-3 bg-indigo-400 dark:bg-indigo-500 text-white rounded-xl font-semibold hover:bg-indigo-300 dark:hover:bg-indigo-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={buttonStyles.primaryAction}
                 >
                   Next
                 </button>
