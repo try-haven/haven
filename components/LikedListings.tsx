@@ -90,14 +90,13 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
     if (!selectedListing || !cardContentRef.current) return;
 
     let ticking = false;
-    let scrollTimeout: NodeJS.Timeout;
 
     const handleScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
           const currentScrollY = cardContentRef.current?.scrollTop || 0;
           const scrollDelta = Math.abs(currentScrollY - lastScrollY);
-          
+
           // Only hide/show if scroll delta is significant (less aggressive)
           if (scrollDelta > 10) {
             if (currentScrollY > lastScrollY && currentScrollY > 100) {
@@ -107,10 +106,10 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
               // Scrolling up or near top - show navbar
               setIsNavbarVisible(true);
             }
-            
+
             setLastScrollY(currentScrollY);
           }
-          
+
           ticking = false;
         });
         ticking = true;
@@ -119,10 +118,9 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
 
     const cardElement = cardContentRef.current;
     cardElement?.addEventListener('scroll', handleScroll, { passive: true });
-    
+
     return () => {
       cardElement?.removeEventListener('scroll', handleScroll);
-      if (scrollTimeout) clearTimeout(scrollTimeout);
     };
   }, [selectedListing, lastScrollY]);
 
