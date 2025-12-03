@@ -28,14 +28,16 @@ export default function LikedListingsPage() {
     }
   }, [user]);
 
-  // Save liked listings to localStorage whenever they change
+  // Save liked listings to localStorage whenever they change (after initial load)
   useEffect(() => {
+    if (isLoading) return; // Don't save until we've loaded from storage
+
     if (user && likedIds.size > 0) {
       localStorage.setItem(`haven_liked_listings_${user.username}`, JSON.stringify(Array.from(likedIds)));
     } else if (user && likedIds.size === 0) {
       localStorage.removeItem(`haven_liked_listings_${user.username}`);
     }
-  }, [likedIds, user]);
+  }, [likedIds, user, isLoading]);
 
   const likedListings = fakeListings.filter((listing) => likedIds.has(listing.id));
 

@@ -12,6 +12,7 @@ export default function SwipePage() {
   const { user } = useUser();
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [hasCompletedAll, setHasCompletedAll] = useState(false);
+  const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
 
   // Load liked listings from localStorage
   useEffect(() => {
@@ -25,17 +26,20 @@ export default function SwipePage() {
           console.error("Error parsing liked listings:", error);
         }
       }
+      setHasLoadedFromStorage(true);
     }
   }, [user]);
 
-  // Save liked listings to localStorage whenever they change
+  // Save liked listings to localStorage whenever they change (after initial load)
   useEffect(() => {
+    if (!hasLoadedFromStorage) return; // Don't save until we've loaded from storage
+
     if (user && likedIds.size > 0) {
       localStorage.setItem(`haven_liked_listings_${user.username}`, JSON.stringify(Array.from(likedIds)));
     } else if (user && likedIds.size === 0) {
       localStorage.removeItem(`haven_liked_listings_${user.username}`);
     }
-  }, [likedIds, user]);
+  }, [likedIds, user, hasLoadedFromStorage]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-4 md:py-8">

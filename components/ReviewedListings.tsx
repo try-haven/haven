@@ -44,7 +44,7 @@ export default function ReviewedListings({ onBack, onBackToHome }: ReviewedListi
       const storedReviews = localStorage.getItem(`haven_listing_reviews_${listing.id}`);
       if (storedReviews) {
         const reviews: Review[] = JSON.parse(storedReviews);
-        const userReview = reviews.find(r => r.userName === user.username);
+        const userReview = reviews.find(r => r.userId === user.username);
         if (userReview) {
           reviewed.push({ listing, review: userReview });
         }
@@ -133,7 +133,7 @@ export default function ReviewedListings({ onBack, onBackToHome }: ReviewedListi
                     setOriginalRating(0);
                     setIsAnonymous(false);
                   }}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-2"
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-2 cursor-pointer"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

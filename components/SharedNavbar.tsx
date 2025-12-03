@@ -102,6 +102,10 @@ export default function SharedNavbar({
     }
   };
 
+  const handleSearch = () => {
+    router.push("/search");
+  };
+
   const handleBackToHome = () => {
     // Always go to home page (/), not swipe
     router.push("/?home=true");
@@ -143,6 +147,12 @@ export default function SharedNavbar({
                 <span className="sm:hidden">({likedCount})</span>
               </button>
             )}
+            <button
+              onClick={handleSearch}
+              className={buttonStyles.navHideMobile}
+            >
+              Search
+            </button>
             <button
               onClick={handlePreferences}
               className={buttonStyles.navHideMobile}

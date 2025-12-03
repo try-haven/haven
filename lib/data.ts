@@ -1,6 +1,7 @@
 export interface Review {
     id: string;
     userName: string;
+    userId: string; // Actual user who posted (even if posted anonymously)
     rating: number;
     comment: string;
     date: string;
