@@ -85,24 +85,26 @@ export default function SwipeableCard({
     : listing.averageRating || 0;
 
   const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-25, 25]);
   const opacity = useTransform(x, [-200, -50, 0, 50, 200], [0, 0.6, 1, 0.6, 0]);
 
-  // Swipe direction indicators
-  const likeOpacity = useTransform(x, [0, 200], [0, 1]);
-  const nopeOpacity = useTransform(x, [-200, 0], [1, 0]);
+  // Enhanced swipe direction indicators with earlier appearance
+  const likeOpacity = useTransform(x, [0, 50, 150], [0, 0.7, 1]);
+  const nopeOpacity = useTransform(x, [-150, -50, 0], [1, 0.7, 0]);
+
+  // Scale effect during drag for better visual feedback
+  const scale = useTransform(x, [-200, 0, 200], [0.95, 1, 0.95]);
 
   // Trigger swipe animation when triggerSwipe prop changes
   useEffect(() => {
     if (triggerSwipe && isTriggeredCard && !hasTriggered && exitX === 0) {
-      const direction = triggerSwipe === "right" ? 200 : -200;
+      const direction = triggerSwipe === "right" ? 300 : -300;
       setHasTriggered(true);
       setExitX(direction);
       setPendingSwipe(triggerSwipe);
       // Call onSwipe with delay to allow slide animation to complete
       setTimeout(() => {
         onSwipe(triggerSwipe);
-      }, 300);
+      }, 400);
     }
   }, [triggerSwipe, isTriggeredCard, onSwipe, x, exitX, hasTriggered]);
 
@@ -155,8 +157,10 @@ export default function SwipeableCard({
   }, [index, listing.address, coordinates, isGeocoding]);
 
   const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (Math.abs(info.offset.x) > 100) {
-      setExitX(info.offset.x > 0 ? 200 : -200);
+    // Increased threshold for clearer swipe decision
+    const swipeThreshold = 120;
+    if (Math.abs(info.offset.x) > swipeThreshold) {
+      setExitX(info.offset.x > 0 ? 300 : -300);
       onSwipe(info.offset.x > 0 ? "right" : "left");
     }
   };
@@ -172,7 +176,7 @@ export default function SwipeableCard({
   if (index >= total) return null;
 
   // Scale and offset for cards behind the top card
-  const scale = index === 0 ? 1 : 0.95;
+  const cardScale = index === 0 ? 1 : 0.95;
   const yOffset = index === 0 ? 0 : 8;
 
   return (
@@ -180,25 +184,26 @@ export default function SwipeableCard({
       className="absolute inset-0 flex items-center justify-center pointer-events-none"
       style={{
         x,
+        scale: index === 0 ? scale : cardScale,
         opacity,
         zIndex: total - index,
         pointerEvents: index === 0 ? "auto" : "none",
       }}
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.2}
+      dragElastic={0.3}
       dragDirectionLock
       onDragEnd={handleDragEnd}
       animate={{
         x: exitX,
         opacity: exitX !== 0 ? 0 : 1,
-        scale: scale,
+        scale: cardScale,
         y: yOffset,
       }}
       transition={{
         type: "spring",
-        stiffness: pendingSwipe ? 200 : 400,
-        damping: pendingSwipe ? 25 : 35,
+        stiffness: pendingSwipe ? 180 : 350,
+        damping: pendingSwipe ? 20 : 30,
       }}
       onAnimationComplete={() => {
         // Clear pending swipe after animation completes
@@ -283,24 +288,30 @@ export default function SwipeableCard({
               </>
             )}
 
-            {/* Swipe Direction Overlays */}
+            {/* Swipe Direction Overlays - Enhanced for Mobile */}
             {index === 0 && (
               <>
                 <motion.div
                   className="absolute inset-0 flex items-center justify-center pointer-events-none"
                   style={{ opacity: likeOpacity }}
                 >
-                  <div className="px-8 py-4 bg-green-500/90 text-white rounded-full text-4xl font-bold border-4 border-white shadow-2xl">
-                    LIKE
-                  </div>
+                  <motion.div
+                    className="px-10 py-6 bg-green-500/95 text-white rounded-2xl text-5xl md:text-4xl font-black border-4 border-white shadow-2xl"
+                    style={{ scale: likeOpacity }}
+                  >
+                    ❤️ LIKE
+                  </motion.div>
                 </motion.div>
                 <motion.div
                   className="absolute inset-0 flex items-center justify-center pointer-events-none"
                   style={{ opacity: nopeOpacity }}
                 >
-                  <div className="px-8 py-4 bg-red-500/90 text-white rounded-full text-4xl font-bold border-4 border-white shadow-2xl">
-                    NOPE
-                  </div>
+                  <motion.div
+                    className="px-10 py-6 bg-red-500/95 text-white rounded-2xl text-5xl md:text-4xl font-black border-4 border-white shadow-2xl"
+                    style={{ scale: nopeOpacity }}
+                  >
+                    👎 NOPE
+                  </motion.div>
                 </motion.div>
               </>
             )}
