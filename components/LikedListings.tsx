@@ -84,7 +84,7 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
   }, [selectedListing?.id, user]);
 
   // Check if user has a review (not just a rating)
-  const hasUserReview = selectedListing && user ? reviews.some(r => r.userName === user.username) : false;
+  const hasUserReview = selectedListing && user ? reviews.some(r => r.userId === user.username) : false;
 
   // Handle navbar visibility on scroll
   useEffect(() => {
@@ -498,7 +498,7 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
                             setOriginalRating(0);
                           }
                           // Load existing review if user has one
-                          const existingReview = reviews.find(r => r.userName === user.username);
+                          const existingReview = reviews.find(r => r.userId === user.username);
                           if (existingReview) {
                             setUserReview(existingReview.comment);
                             setOriginalReview(existingReview.comment);
@@ -644,7 +644,7 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
                               // Delete review and rating
                               const listingReviews = localStorage.getItem(`haven_listing_reviews_${selectedListing.id}`);
                               const allReviews: Review[] = listingReviews ? JSON.parse(listingReviews) : [];
-                              const filteredReviews = allReviews.filter(r => r.userName !== user.username);
+                              const filteredReviews = allReviews.filter(r => r.userId !== user.username);
                               setReviews(filteredReviews);
                               localStorage.setItem(`haven_listing_reviews_${selectedListing.id}`, JSON.stringify(filteredReviews));
                               
@@ -697,11 +697,12 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
                             if (reviewChanged || (userReview.trim() && !hasReviewed)) {
                               const listingReviews = localStorage.getItem(`haven_listing_reviews_${selectedListing.id}`);
                               const allReviews: Review[] = listingReviews ? JSON.parse(listingReviews) : [];
-                              const filteredReviews = allReviews.filter(r => r.userName !== user.username);
+                              const filteredReviews = allReviews.filter(r => r.userId !== user.username);
 
                               const newReview: Review = {
                                 id: Date.now().toString(),
                                 userName: isAnonymous ? generateAnonymousNickname() : user.username,
+                                userId: user.username,
                                 rating: userRating,
                                 comment: userReview.trim() || "No comment",
                                 date: new Date().toISOString(),
