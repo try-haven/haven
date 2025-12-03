@@ -144,7 +144,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
       {/* Footer */}
       <footer className="border-t border-gray-200 dark:border-gray-700 mt-20 py-8">
         <div className="container mx-auto px-6 text-center text-gray-600 dark:text-gray-400">
-          <p>&copy; 2024 Haven.</p>
+          <p>&copy; 2025 Haven.</p>
         </div>
       </footer>
     </div>
