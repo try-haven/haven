@@ -1,6 +1,6 @@
 # Haven — Apartment Swiping App
 
-A modern apartment discovery platform with a Tinder-like swipe interface. Find your perfect apartment by swiping through verified listings, get personalized recommendations, and connect with potential roommates.
+A modern apartment discovery platform with a Tinder-like swipe interface. Find your perfect apartment by swiping through personalized listings tailored to your preferences and discover your next home.
 
 ## 🚀 Project Overview
 
@@ -58,6 +58,7 @@ Haven is a web-based apartment search application that makes finding your next h
 - **Animations**: Framer Motion
 - **Maps**: Leaflet & React Leaflet
 - **Language**: TypeScript
+- **Testing**: Vitest + React Testing Library
 - **Deployment**: Vercel-ready
 - **Backend**: Supabase (Postgres, Auth, Storage, Edge Functions)
 - **AI Services**: HuggingFace Inference API (free tier)
@@ -190,7 +191,7 @@ npm install
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+4. Open [http://localhost:3000/haven](http://localhost:3000/haven) in your browser
 
 ### Build for Production
 
@@ -198,6 +199,39 @@ npm run dev
 npm run build
 npm start
 ```
+
+### Running Tests
+
+The project uses **Vitest** with React Testing Library for comprehensive testing.
+
+#### Run all tests
+```bash
+npm test
+```
+
+#### Run tests with UI dashboard
+```bash
+npm test:ui
+```
+
+#### Run tests with coverage report
+```bash
+npm test:coverage
+```
+
+#### Test Coverage
+
+- **31 tests** across 4 test suites
+- **UserContext** - 9 tests (authentication, preferences, localStorage)
+- **HavenLogo** - 7 tests (rendering, sizes, animations)
+- **Nickname Generator** - 5 tests (format, variety, validation)
+- **CommutePreference** - 10 tests (user interactions, selections, callbacks)
+
+All tests use:
+- ✅ Vitest for fast test execution
+- ✅ React Testing Library for component testing
+- ✅ @testing-library/user-event for user interaction simulation
+- ✅ jsdom for browser environment simulation
 
 ## 📖 Documentation
 
@@ -294,7 +328,8 @@ The app uses React's `useState` for local state management:
 - [ ] Social sharing
 
 ### Week 7: Testing & Optimization
-- [ ] Unit tests
+- [x] Unit tests (31 tests across 4 test suites)
+- [x] Test framework setup (Vitest + React Testing Library)
 - [ ] Integration tests
 - [ ] Performance optimization
 - [ ] Accessibility improvements
