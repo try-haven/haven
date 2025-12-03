@@ -87,7 +87,7 @@ export default function ReviewedListings({ onBack, onBackToHome }: ReviewedListi
   if (reviewedListings.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8">
-        <div className="container mx-auto px-6 max-w-4xl">
+        <div className="container mx-auto px-4 md:px-6 max-w-4xl">
           <div className="flex items-center justify-between mb-8">
             <SharedNavbar
               onBackToHome={onBackToHome}
@@ -117,7 +117,7 @@ export default function ReviewedListings({ onBack, onBackToHome }: ReviewedListi
   if (selectedListing && selectedReview) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8">
-        <div className="container mx-auto px-6 max-w-4xl">
+        <div className="container mx-auto px-4 md:px-6 max-w-4xl">
           <div className="flex items-center justify-between mb-8">
             <SharedNavbar
               leftButton={
@@ -340,7 +340,7 @@ export default function ReviewedListings({ onBack, onBackToHome }: ReviewedListi
                             // Delete review and rating
                             const listingReviews = localStorage.getItem(`haven_listing_reviews_${selectedListing.id}`);
                             const allReviews: Review[] = listingReviews ? JSON.parse(listingReviews) : [];
-                            const filteredReviews = allReviews.filter(r => r.userName !== user.username);
+                            const filteredReviews = allReviews.filter(r => r.userId !== user.username);
                             localStorage.setItem(`haven_listing_reviews_${selectedListing.id}`, JSON.stringify(filteredReviews));
                             
                             // Remove rating
@@ -360,7 +360,7 @@ export default function ReviewedListings({ onBack, onBackToHome }: ReviewedListi
                               const storedReviews = localStorage.getItem(`haven_listing_reviews_${listing.id}`);
                               if (storedReviews) {
                                 const reviews: Review[] = JSON.parse(storedReviews);
-                                const userReview = reviews.find(r => r.userName === user.username);
+                                const userReview = reviews.find(r => r.userId === user.username);
                                 if (userReview) {
                                   reviewed.push({ listing, review: userReview });
                                 }
@@ -442,7 +442,7 @@ export default function ReviewedListings({ onBack, onBackToHome }: ReviewedListi
                               const storedReviews = localStorage.getItem(`haven_listing_reviews_${listing.id}`);
                               if (storedReviews) {
                                 const reviews: Review[] = JSON.parse(storedReviews);
-                                const userReview = reviews.find(r => r.userName === user.username);
+                                const userReview = reviews.find(r => r.userId === user.username);
                                 if (userReview) {
                                   reviewed.push({ listing, review: userReview });
                                 }
