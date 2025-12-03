@@ -131,7 +131,7 @@ export default function SharedNavbar({
           <h1 className={textStyles.headingBrand}>Haven</h1>
         </button>
       )}
-      <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
+      <div className="flex items-center gap-0.5 md:gap-1 flex-shrink-0">
         <DarkModeToggle />
         {isLoggedIn && (
           <>
