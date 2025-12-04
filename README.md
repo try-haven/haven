@@ -19,6 +19,7 @@ Haven is a web-based apartment search application that makes finding your next h
 
 - **Onboarding Flow**
   - Sign Up / Log In landing page
+  - User type selection (Searcher vs Manager)
   - Address input with autocomplete and interactive map
   - Commute preference selection (Car, Public Transit, Walk, Bike)
   - Smooth transitions between screens
@@ -30,17 +31,27 @@ Haven is a web-based apartment search application that makes finding your next h
   - Swipe animations with visual feedback (LIKE/NOPE overlays)
   - Image carousel for multiple listing photos
   - Progress indicator showing current position
+  - Share listing functionality
+  - Unique user tracking (one action per user per listing)
 
 - **Liked Listings**
   - View all apartments you've swiped right on
   - Grid view and detailed view
-  - Remove listings from liked collection
+  - Remove listings from liked collection (tracks as "unlike" event)
   - Image carousel support
+  - Write and edit reviews with ratings
+
+- **Listing Detail Pages**
+  - Full listing information with image gallery
+  - Interactive map showing location
+  - User reviews and ratings
+  - Share listing via native share or copy link
+  - Responsive design with dark mode support
 
 - **Dark Mode**
   - System-wide dark mode support
   - Persistent user preference (localStorage)
-  - Toggle button in navigation
+  - Toggle button in navigation and manager portal
   - Smooth theme transitions
 
 - **Address Input with Geo-UX**
@@ -50,6 +61,65 @@ Haven is a web-based apartment search application that makes finding your next h
   - Simplified address formatting
   - Visual map updates on selection
 
+### Manager Portal ✅
+
+- **Manager Authentication**
+  - Separate account type for property managers
+  - Dedicated dashboard with analytics
+  - Static logo (no animation) for professional look
+  - Dark mode toggle
+
+- **Listing Management**
+  - Create new listings with:
+    - Title, address, price, bedrooms, bathrooms, sqft
+    - Multiple image URLs
+    - Amenities (comma-separated)
+    - Availability date
+    - Description
+  - Edit existing listings with change tracking
+  - Delete listings with confirmation
+  - Preview listings before publishing
+  - Share listing links
+
+- **Analytics Dashboard**
+  - Total listings count
+  - Total views, likes, and passes
+  - Per-listing metrics:
+    - Views
+    - Likes (swipe rights)
+    - Passes (swipe lefts)
+    - Like rate percentage
+    - Shares count
+    - Reviews count
+  - Real-time metrics tracking
+
+- **Trends Charts** 🆕
+  - Interactive line charts with three Y-axes:
+    - **Left axis**: Engagement count (Likes, Passes, Shares)
+    - **Middle axis**: Price ($/month)
+    - **Right axis**: Average rating (1-5 stars)
+  - Adaptive time granularity:
+    - Minute-by-minute (< 1 hour of data)
+    - Hourly (1 hour to 2 days)
+    - Daily (2+ days)
+  - Price change markers with annotations
+  - Rating trend line showing average over time
+  - Unique user tracking (each user counted once)
+  - Auto-expanded charts for immediate visibility
+
+- **Review & Rating Tracking**
+  - Track when reviews are submitted or updated
+  - Monitor rating changes over time
+  - Calculate rolling average rating
+  - Correlate ratings with price changes
+  - See how user satisfaction changes
+
+- **Change History**
+  - Track all listing edits with timestamps
+  - Record price changes specifically
+  - Display change markers on trends chart
+  - Cross-reference changes with engagement metrics
+
 ## 🛠️ Tech Stack
 
 - **Framework**: Next.js 16.0.3
@@ -57,11 +127,13 @@ Haven is a web-based apartment search application that makes finding your next h
 - **Styling**: Tailwind CSS v4
 - **Animations**: Framer Motion
 - **Maps**: Leaflet & React Leaflet
+- **Charts**: Recharts (for analytics visualization)
 - **Language**: TypeScript
 - **Testing**: Vitest + React Testing Library
 - **Deployment**: Vercel-ready
-- **Backend**: Supabase (Postgres, Auth, Storage, Edge Functions)
-- **AI Services**: HuggingFace Inference API (free tier)
+- **State Management**: React Context API + localStorage
+- **Backend** (Future): Supabase (Postgres, Auth, Storage, Edge Functions)
+- **AI Services** (Future): HuggingFace Inference API (free tier)
 
 ## 🏗️ Architecture & System Design
 
@@ -146,24 +218,36 @@ Haven is designed to run on **$0 infrastructure** using free tiers, making it fu
 ```
 haven/
 ├── app/
-│   ├── layout.tsx          # Root layout with dark mode provider
-│   ├── page.tsx             # Main page with view state management
-│   └── globals.css          # Global styles and Tailwind config
+│   ├── layout.tsx                    # Root layout with providers
+│   ├── page.tsx                      # Main page with routing
+│   ├── globals.css                   # Global styles and Tailwind
+│   ├── listing/page.tsx              # Listing detail page
+│   ├── liked-listings/page.tsx       # Liked listings page
+│   ├── search/page.tsx               # Search and browse page
+│   ├── swipe/page.tsx                # Swipe interface page
+│   └── manager/
+│       ├── dashboard/page.tsx        # Manager analytics dashboard
+│       ├── add-listing/page.tsx      # Create new listing
+│       └── edit-listing/page.tsx     # Edit existing listing
 ├── components/
-│   ├── LandingPage.tsx      # Marketing landing page
-│   ├── OnboardingLanding.tsx # Sign Up/Log In page
-│   ├── AddressInput.tsx     # Address input with autocomplete & map
-│   ├── CommutePreference.tsx # Commute options selection
-│   ├── CardStack.tsx        # Swipeable card stack container
-│   ├── SwipeableCard.tsx    # Individual apartment card
-│   ├── LikedListings.tsx    # Liked listings view
-│   ├── HavenLogo.tsx        # Reusable logo component
-│   ├── DarkModeToggle.tsx  # Dark mode toggle button
-│   └── MapView.tsx          # Interactive map component
+│   ├── LandingPage.tsx               # Marketing landing page
+│   ├── OnboardingLanding.tsx         # Sign Up/Log In with user type
+│   ├── AddressInput.tsx              # Address autocomplete & map
+│   ├── CommutePreference.tsx         # Commute options selection
+│   ├── CardStack.tsx                 # Swipeable card stack container
+│   ├── SwipeableCard.tsx             # Individual apartment card
+│   ├── LikedListings.tsx             # Liked listings view
+│   ├── ReviewedListings.tsx          # Reviewed listings management
+│   ├── ListingTrendsChart.tsx        # Analytics chart component
+│   ├── HavenLogo.tsx                 # Reusable logo component
+│   ├── DarkModeToggle.tsx            # Dark mode toggle button
+│   └── MapView.tsx                   # Interactive map component
 ├── contexts/
-│   └── DarkModeContext.tsx  # Dark mode state management
+│   ├── UserContext.tsx               # User auth & preferences
+│   └── DarkModeContext.tsx           # Dark mode state management
 └── lib/
-    └── data.ts              # Fake apartment listings data
+    ├── data.ts                       # Sample apartment listings
+    └── styles.ts                     # Reusable style constants
 ```
 
 ## 🚦 Getting Started
@@ -268,16 +352,72 @@ Address input with autocomplete and map integration.
 
 ### State Management
 
-The app uses React's `useState` for local state management:
-- View state: `marketing` | `onboarding` | `address` | `commute` | `swipe` | `liked`
-- Liked listings: Stored as a `Set<string>` of listing IDs
-- Onboarding data: User address and commute preferences
-- Dark mode: Managed via Context API with localStorage persistence
+The app uses React Context API and localStorage:
+- **User Context**: Authentication, user type (searcher/manager), preferences
+- **Dark Mode Context**: Theme preference with localStorage persistence
+- **Local Storage Keys**:
+  - `haven_users`: User accounts and credentials
+  - `haven_manager_listings_{username}`: Manager's listings
+  - `haven_listing_metrics`: Aggregated metrics per listing
+  - `haven_listing_metric_events`: Timestamped events for trends
+  - `haven_listing_changes`: Edit history for listings
+  - `haven_listing_reviews_{listingId}`: Reviews per listing
+  - `haven_liked_listings_{username}`: User's liked listings
+  - `haven_reviewed_listings_{username}`: User's reviewed listings
+
+### Metrics Tracking
+
+The app tracks detailed metrics for analytics:
+
+**Event Types:**
+- `view`: User views a listing
+- `swipeRight`: User likes a listing
+- `swipeLeft`: User passes on a listing
+- `unlike`: User removes a listing from liked list
+- `share`: User shares a listing
+- `review`: User submits or updates a review/rating
+
+**Unique User Tracking:**
+- Each user can only have ONE action (like OR pass) counted per listing
+- If a user likes then passes, the like is removed and pass is counted
+- Prevents double-counting and ensures accurate engagement metrics
+- Reviews track rating changes over time per user
+
+**Trends Calculation:**
+- Real-time aggregation of events into time buckets
+- Adaptive granularity (minute/hour/day) based on data range
+- Rolling average rating calculation
+- Price change markers correlated with engagement
+- Cumulative counts for likes, passes, and shares
 
 ### Keyboard Shortcuts
 
+**Swipe Interface:**
 - **Arrow Left**: Swipe left (pass)
 - **Arrow Right**: Swipe right (like)
+
+### Manager Portal Features
+
+**Dashboard Analytics:**
+- View aggregated statistics across all listings
+- Per-listing breakdown with detailed metrics
+- Interactive trends charts showing:
+  - Engagement over time (likes, passes, shares)
+  - Price changes with impact on engagement
+  - Average rating evolution
+  - Minute-level granularity for fresh data
+
+**Listing Management:**
+- Create, edit, and delete listings
+- Preview listings as they appear to users
+- Share listing links via native share or copy
+- Track all changes with timestamps
+
+**Business Insights:**
+- Like rate percentage (swipe right / total swipes)
+- Review count and average rating
+- Share count for viral potential
+- Cross-reference pricing changes with user response
 
 ## 🗺️ 8-Week Execution Roadmap
 
