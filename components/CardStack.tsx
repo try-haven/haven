@@ -495,7 +495,7 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
       <AdOverlay position="bottom-right" />
 
       {/* Card Stack */}
-      <div className="relative w-full max-w-5xl mx-auto flex-1 overflow-hidden">
+      <div className="relative w-full max-w-5xl mx-auto flex-1 overflow-hidden mb-20 md:mb-0">
         {(() => {
           // Check if current item is an ad
           const currentItem = items[currentIndex];
@@ -548,7 +548,7 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-col md:hidden items-center gap-3 -mt-24 px-4 pb-2 relative z-50">
+      <div className="md:hidden fixed bottom-4 left-0 right-0 flex flex-col items-center gap-3 px-4 z-50">
         {/* Undo Button - Shows after swipe */}
         {canUndo && (
           <motion.button
