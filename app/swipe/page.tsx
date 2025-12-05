@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import CardStack from "@/components/CardStack";
 import SharedNavbar from "@/components/SharedNavbar";
 import { useUser } from "@/contexts/UserContext";
-import { fakeListings, ApartmentListing } from "@/lib/data";
+import { fakeListings, ApartmentListing, initializeFakeRentalHistory } from "@/lib/data";
 
 export default function SwipePage() {
   const router = useRouter();
@@ -14,6 +14,13 @@ export default function SwipePage() {
   const [hasCompletedAll, setHasCompletedAll] = useState(false);
   const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
   const [allListings, setAllListings] = useState<ApartmentListing[]>([]);
+
+  // Initialize fake rental history on first load
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      initializeFakeRentalHistory();
+    }
+  }, []);
 
   // Load all manager listings and combine with fake listings
   useEffect(() => {

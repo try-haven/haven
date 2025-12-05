@@ -24,6 +24,144 @@ export interface ApartmentListing {
     reviews?: Review[];
 }
 
+// Generate fake rental history for demo listings
+export function initializeFakeRentalHistory() {
+  // Load existing changes (for manager listings)
+  const existingChanges = localStorage.getItem("haven_listing_changes");
+  let allChanges = existingChanges ? JSON.parse(existingChanges) : [];
+
+  // Remove any existing fake listing history (IDs 1-10) to refresh with new data
+  allChanges = allChanges.filter((c: any) => {
+    const id = parseInt(c.listingId);
+    return isNaN(id) || id < 1 || id > 10;
+  });
+
+  const changes = allChanges;
+
+  const now = Date.now();
+  const oneDay = 24 * 60 * 60 * 1000;
+
+  // Listing 1: Price decreased recently (good deal!)
+  changes.push({
+    listingId: "1",
+    timestamp: now - (5 * oneDay),
+    field: "price",
+    oldValue: 1950,
+    newValue: 1850
+  });
+
+  // Listing 2: Price increased recently
+  changes.push({
+    listingId: "2",
+    timestamp: now - (45 * oneDay),
+    field: "price",
+    oldValue: 2900,
+    newValue: 3000
+  });
+  changes.push({
+    listingId: "2",
+    timestamp: now - (4 * oneDay),
+    field: "price",
+    oldValue: 3000,
+    newValue: 3200
+  });
+
+  // Listing 3: Stable pricing, recent small decrease
+  changes.push({
+    listingId: "3",
+    timestamp: now - (6 * oneDay),
+    field: "price",
+    oldValue: 2300,
+    newValue: 2200
+  });
+
+  // Listing 4: Luxury unit, price decreased to attract renters
+  changes.push({
+    listingId: "4",
+    timestamp: now - (30 * oneDay),
+    field: "price",
+    oldValue: 6200,
+    newValue: 5800
+  });
+  changes.push({
+    listingId: "4",
+    timestamp: now - (10 * oneDay),
+    field: "price",
+    oldValue: 5800,
+    newValue: 5500
+  });
+
+  // Listing 5: Budget option, recent increase
+  changes.push({
+    listingId: "5",
+    timestamp: now - (60 * oneDay),
+    field: "price",
+    oldValue: 1550,
+    newValue: 1600
+  });
+  changes.push({
+    listingId: "5",
+    timestamp: now - (6 * oneDay),
+    field: "price",
+    oldValue: 1600,
+    newValue: 1650
+  });
+
+  // Listing 6: Premium unit, recent price drop
+  changes.push({
+    listingId: "6",
+    timestamp: now - (3 * oneDay),
+    field: "price",
+    oldValue: 4200,
+    newValue: 3800
+  });
+
+  // Listing 7: Garden unit, recent price adjustment
+  changes.push({
+    listingId: "7",
+    timestamp: now - (40 * oneDay),
+    field: "price",
+    oldValue: 2300,
+    newValue: 2500
+  });
+  changes.push({
+    listingId: "7",
+    timestamp: now - (5 * oneDay),
+    field: "price",
+    oldValue: 2500,
+    newValue: 2400
+  });
+
+  // Listing 8: Family home, recent price increase
+  changes.push({
+    listingId: "8",
+    timestamp: now - (4 * oneDay),
+    field: "price",
+    oldValue: 6200,
+    newValue: 6500
+  });
+
+  // Listing 9: Loft, recent decrease
+  changes.push({
+    listingId: "9",
+    timestamp: now - (7 * oneDay),
+    field: "price",
+    oldValue: 2100,
+    newValue: 1950
+  });
+
+  // Listing 10: Views unit, price decreased recently
+  changes.push({
+    listingId: "10",
+    timestamp: now - (2 * oneDay),
+    field: "price",
+    oldValue: 3600,
+    newValue: 3400
+  });
+
+  localStorage.setItem("haven_listing_changes", JSON.stringify(changes));
+}
+
 export const fakeListings: ApartmentListing[] = [
     {
         id: "1",
