@@ -19,15 +19,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Haven — Apartment Swiping App",
   description: "Find your perfect apartment by swiping through verified listings.",
+  metadataBase: new URL('https://try-haven.github.io'),
   openGraph: {
     title: "Haven — Apartment Swiping App",
     description: "Find your perfect apartment by swiping through verified listings.",
     type: "website",
+    images: ['/haven/opengraph-image.svg'],
   },
   twitter: {
     card: "summary_large_image",
     title: "Haven — Apartment Swiping App",
     description: "Find your perfect apartment by swiping through verified listings.",
+    images: ['/haven/opengraph-image.svg'],
   },
 };
 
