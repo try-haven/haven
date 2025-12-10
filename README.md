@@ -10,9 +10,9 @@ A modern apartment discovery platform with a Tinder-like swipe interface. Find y
 - **Password**: `test1234`
 
 ### Test Manager (Property Manager)
-- **Username**: `manager`
-- **Email**: `manager@gmail.com`
-- **Password**: `test1234`
+- **Username**: `demo-manager`
+- **Email**: `demo-manager@haven.app`
+- **Password**: `demo123456`
 
 ## 🚀 Project Overview
 
