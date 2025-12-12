@@ -198,29 +198,38 @@ After filtering, listings are scored 0-100% based on **learned preferences**. Th
 
 | Factor | Weight | Rationale | Score Calculation |
 |--------|--------|-----------|-------------------|
-| **Amenities** | **60%** | **PRIMARY DIFFERENTIATOR** - The main way apartments differ in "style" after basic requirements are met | Weighted sum of amenity preference scores using contrast learning (see below) |
-| **Quality** | **25%** | Reflects listing completeness and professionalism | 50% photo count (5+ = perfect), 50% description length (200+ chars = perfect) |
-| **Rating** | **15%** | Social proof and tenant satisfaction | Linear scale: 5★ = 100%, 0★ = 0%. New listings default to 50% (neutral). |
+| **Location/Distance** | **40%** | **PRIMARY FACTOR** - Geographic proximity to user's preferred address is most important | Haversine distance calculation: 0-5mi = 100%, 5-15mi = 80%, 15-30mi = 50%, 30-50mi = 20%, 50+mi = 0% |
+| **Amenities** | **35%** | **SECONDARY DIFFERENTIATOR** - Learned from swipe behavior using contrast analysis | Weighted sum of amenity preference scores comparing liked vs disliked listings |
+| **Quality** | **15%** | Reflects listing completeness and professionalism | 50% photo count (5+ = perfect), 50% description length (200+ chars = perfect) |
+| **Rating** | **10%** | Social proof and tenant satisfaction | Linear scale: 5★ = 100%, 0★ = 0%. New listings default to 50% (neutral). |
 
 ### Why These Weights?
 
-1. **Amenities (60%)**: After filtering by price/bedrooms/bathrooms, the biggest difference between apartments is amenities. Pool vs. no pool, gym vs. no gym, parking vs. street parking - these define lifestyle fit.
+1. **Location/Distance (40%)**: Geographic proximity is the most important factor - an apartment 300 miles away is essentially unusable regardless of how perfect the amenities are. Distance scoring is very punishing: listings 50+ miles away get 0% location score, essentially filtering them out. This ensures nearby apartments always rank higher than far ones.
 
-2. **Quality (25%)**: High-quality listings with many photos and detailed descriptions indicate serious landlords and help users make informed decisions. Less important than amenities but still meaningful.
+2. **Amenities (35%)**: After location, amenities are the main lifestyle differentiator. Pool vs. no pool, gym vs. no gym, parking vs. street parking - these define whether an apartment fits your lifestyle. Learned from swipe behavior using contrast analysis.
 
-3. **Rating (15%)**: Important for avoiding bad landlords, but most listings don't have many reviews. Lower weight prevents over-penalizing new listings.
+3. **Quality (15%)**: High-quality listings with many photos and detailed descriptions indicate serious landlords and help users make informed decisions. Important but secondary to location and amenities.
+
+4. **Rating (10%)**: Important for avoiding bad landlords, but most listings don't have many reviews. Lower weight prevents over-penalizing new listings.
 
 ### Example Score Calculation
 
 ```
-Listing A: 1br, $2000, San Francisco, CA
+User preference: Palo Alto, CA
+Listing A: 1br, $2000, Mountain View, CA (15 miles from Palo Alto)
+- Distance: 15 miles → 80% location score
 - Amenities: Pool (high pref), Gym (high pref), Parking (medium pref) → 85% amenity score
 - Quality: 6 photos, 250-char description → 90% quality score
 - Rating: 4.2★ (8 reviews) → 84% rating score
 
-Final Score = (0.60 × 85%) + (0.25 × 90%) + (0.15 × 84%)
-            = 51% + 22.5% + 12.6%
-            = 86.1% → "Top Pick" badge (80%+ threshold)
+Final Score = (0.40 × 80%) + (0.35 × 85%) + (0.15 × 90%) + (0.10 × 84%)
+            = 32% + 29.75% + 13.5% + 8.4%
+            = 83.65% → "Top Pick" badge (80%+ threshold)
+
+Listing B: Same amenities/quality but in Santa Monica, CA (300+ miles away)
+- Distance: 300 miles → 0% location score (50+ miles = filtered out)
+- Final Score = (0.40 × 0%) + ... = ~35% → Won't be shown/ranked very low
 ```
 
 ---
@@ -480,10 +489,16 @@ This design ensures:
 | File | Purpose |
 |------|---------|
 | `lib/recommendations.ts` | Core learning and scoring algorithms |
-| `app/swipe/page.tsx` | Hard filters, ranking, auto-update logic |
-| `contexts/UserContext.tsx` | User profile, learned preferences storage |
-| `contexts/ListingsContext.tsx` | Listings data provider |
+| `lib/geocoding.ts` | Geocoding utilities and distance calculation |
+| `lib/listings.ts` | Listing CRUD operations with geocoding |
+| `app/swipe/page.tsx` | Swipe interface with personalization logic |
+| `contexts/UserContext.tsx` | User profile, learned preferences, geocoded address storage |
+| `contexts/LikedListingsContext.tsx` | Liked listings management with localStorage sync |
 | `components/SwipeableCard.tsx` | Match score display, Top Pick badges |
+| `scripts/seed-listings.ts` | Database seeding with geocoding |
+| `scripts/check-geocoding.ts` | Geocoding status verification |
+| `scripts/clear-listings.ts` | Database cleanup utility |
+| `scripts/reset-user-preferences.ts` | User reset for testing |
 
 ### Key Functions
 
@@ -582,7 +597,10 @@ Alice finds her perfect apartment: 1br, $2,200, parking included, in Mission Dis
 - **Testing**: Vitest + React Testing Library
 - **Deployment**: Vercel-ready
 - **State Management**: React Context API + localStorage
-- **Backend** (Future): Supabase (Postgres, Auth, Storage, Edge Functions)
+- **Database**: Supabase (Postgres with PostGIS for geospatial queries)
+- **Authentication**: Supabase Auth
+- **Geocoding**: OpenStreetMap Nominatim API (free, open-source)
+- **Distance Calculation**: Haversine formula implementation
 - **AI Services** (Future): HuggingFace Inference API (free tier)
 
 ## 🏗️ Architecture & System Design
@@ -706,6 +724,7 @@ haven/
 
 - Node.js >= 20.9.0
 - npm, yarn, pnpm, or bun
+- Supabase account (for database)
 
 ### Installation
 
@@ -720,12 +739,49 @@ cd haven
 npm install
 ```
 
-3. Run the development server
+3. Set up environment variables
+```bash
+# Create .env.local file
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+```
+
+4. Run the development server
 ```bash
 npm run dev
 ```
 
-4. Open [http://localhost:3000/haven](http://localhost:3000/haven) in your browser
+5. Open [http://localhost:3000/haven](http://localhost:3000/haven) in your browser
+
+### Database Setup & Seeding
+
+#### Seed Database with Listings
+```bash
+npm run seed
+```
+This will:
+- Geocode 42 sample listings using OpenStreetMap Nominatim API
+- Insert listings with latitude/longitude coordinates
+- Takes ~45 seconds due to rate limiting (1 request/second)
+
+#### Check Geocoding Status
+```bash
+npm run check-geocoding
+```
+Shows which listings have coordinates and which are missing.
+
+#### Clear All Listings
+```bash
+npm run clear-listings
+```
+Deletes all listings from the database (useful before re-seeding).
+
+#### Reset Test User
+```bash
+npm run reset-user test@gmail.com
+```
+Resets user preferences, learned personalization, and swipe history for testing.
 
 ### Build for Production
 
@@ -901,19 +957,20 @@ The app tracks detailed metrics for analytics:
 - [x] Personalized listing recommendations with scoring algorithm
 - [x] Behavioral learning from swipe patterns
 - [x] Contrast learning (liked vs disliked analysis)
-- [x] Intelligent ranking system with location-first approach:
-  - 40% Location (city/state proximity matching)
-  - 20% Price
-  - 12% Bedrooms
-  - 10% Amenities
-  - 8% Bathrooms
-  - 5% Sqft
-  - 5% Quality
+- [x] Distance-based ranking with geocoding:
+  - **40% Location/Distance** (proximity to user's preferred address - PRIMARY FACTOR)
+  - **35% Amenities** (learned from swipe behavior)
+  - **15% Quality** (images, description completeness)
+  - **10% Rating** (if available)
+- [x] OpenStreetMap Nominatim API for geocoding addresses
+- [x] Haversine formula for calculating geographic distance
+- [x] Punishing distance scoring (50+ miles = 0%, essentially filtered out)
 - [x] "Top Pick" badges for 80%+ match scores
 - [x] "No preference" option to learn from behavior
-- [x] Smart location matching (0% for different states, 60% same state, 100% same city)
 - [x] Amenity preference learning with contrast analysis
 - [x] Quality preference learning (images, descriptions)
+- [x] LocalStorage synchronization for liked listings tracking
+- [x] Immediate database persistence after 5 swipes
 
 ### Week 5: Roommate Matching
 - [ ] User profile creation
@@ -977,11 +1034,18 @@ Currently using public APIs (OpenStreetMap). For production, you may want to:
 - Image optimization configured for `images.unsplash.com`
 - Tailwind CSS v4 with custom dark mode variant
 
-## 🐛 Known Issues
+## 🐛 Known Issues & Fixes
 
+### Fixed Issues ✅
+- ✅ **Bathroom rounding error** - Fixed: Now rounds learned_bathrooms to nearest integer before database save
+- ✅ **LocalStorage sync for liked listings** - Fixed: LikedListingsContext now saves to localStorage for personalization engine
+- ✅ **Learned preferences not saving** - Fixed: Saves immediately at 5 swipes + on page exit
+- ✅ **Distance ranking** - Fixed: Increased weight to 40%, punishing scoring for 50+ miles (0% score)
+
+### Known Limitations
+- Geocoding rate limit: 1 request/second (OpenStreetMap Nominatim)
 - Some Unsplash images may fail to load (fallback UI implemented)
 - Map tiles may require API key for higher usage
-- Address autocomplete rate limits (OpenStreetMap)
 
 ## 💰 Monetization Strategy
 
