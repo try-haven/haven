@@ -24,6 +24,8 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
         id: listing.id,
         title: listing.title,
         address: listing.address,
+        latitude: listing.latitude ? Number(listing.latitude) : undefined,
+        longitude: listing.longitude ? Number(listing.longitude) : undefined,
         price: Number(listing.price),
         bedrooms: listing.bedrooms,
         bathrooms: listing.bathrooms,
@@ -32,6 +34,8 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
         amenities: listing.amenities || [],
         description: listing.description,
         availableFrom: listing.available_from,
+        averageRating: listing.average_rating ? Number(listing.average_rating) : undefined,
+        totalRatings: listing.total_ratings || undefined,
       }));
       setListings(convertedListings);
     } catch (error) {
