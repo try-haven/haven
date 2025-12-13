@@ -23,9 +23,10 @@ interface CardStackProps {
   onCompletedChange?: (completed: boolean) => void;
   showMatchScores?: boolean;
   onSwipeCountUpdate?: () => void;
+  onStartOver?: () => void;
 }
 
-export default function CardStack({ listings, onLikedChange, initialLikedIds = new Set(), onViewLiked, initialCompleted = false, onCompletedChange, showMatchScores = false, onSwipeCountUpdate }: CardStackProps) {
+export default function CardStack({ listings, onLikedChange, initialLikedIds = new Set(), onViewLiked, initialCompleted = false, onCompletedChange, showMatchScores = false, onSwipeCountUpdate, onStartOver }: CardStackProps) {
   const { user } = useUser();
 
   // Load saved position from localStorage on mount
@@ -171,18 +172,15 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
     }
   }, [initialCompleted, listings.length, currentIndex]);
 
-  // Sync liked listings with parent component when navigating back
-  // Merge parent's liked IDs with our current ones to preserve any new likes
+  // Sync liked listings with parent ONLY when parent changes (e.g., navigating back from liked listings page)
+  // Don't trigger on local state changes - only when parent (initialLikedIds) changes
   useEffect(() => {
     const currentIds = Array.from(likedListings).sort().join(',');
     const parentIds = Array.from(initialLikedIds).sort().join(',');
 
-    // If parent has liked IDs we don't have, merge them in
-    if (parentIds !== currentIds && initialLikedIds.size > 0) {
-      const merged = new Set([...likedListings, ...initialLikedIds]);
-      if (merged.size !== likedListings.size) {
-        setLikedListings(merged);
-      }
+    // Only sync if parent has changed AND has different items
+    if (parentIds !== currentIds) {
+      setLikedListings(new Set(initialLikedIds));
     }
   }, [initialLikedIds]);
 
@@ -531,6 +529,10 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
               localStorage.removeItem("haven_reviewed_listings");
               // Reset swipe position
               localStorage.setItem("haven_swipe_position", "0");
+              // Trigger re-rank in parent to show all listings
+              if (onStartOver) {
+                onStartOver();
+              }
               // Don't reset liked listings - keep them!
             }}
             className="px-6 py-3 bg-indigo-600 text-white rounded-full font-semibold hover:bg-indigo-700 transition-colors"
@@ -764,6 +766,10 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
               localStorage.removeItem("haven_reviewed_listings");
               if (onCompletedChange) {
                 onCompletedChange(false);
+              }
+              // Trigger re-rank in parent to show all listings
+              if (onStartOver) {
+                onStartOver();
               }
               // Don't reset liked listings - keep them!
             }}

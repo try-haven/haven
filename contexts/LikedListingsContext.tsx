@@ -74,14 +74,13 @@ export function LikedListingsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    console.log('[LikedListingsContext] Loading liked listings for user:', user.id);
     setLoading(true);
+
+    // Load from database (since we now sync immediately, database should be source of truth)
     const ids = await getLikedListings(user.id);
-    console.log('[LikedListingsContext] Loaded liked listings from Supabase:', ids.length);
     const idsSet = new Set(ids);
     setLikedIds(idsSet);
     previousLikedIds.current = new Set(idsSet);
-    // Save to localStorage for personalization engine
     localStorage.setItem("haven_liked_listings", JSON.stringify(ids));
     setLoading(false);
   }, [user]);
@@ -159,58 +158,59 @@ export function LikedListingsProvider({ children }: { children: ReactNode }) {
     return likedIds.has(listingId);
   };
 
-  // Batch update function for CardStack
-  const setLikedIdsBatch = useCallback((newIds: Set<string> | ((prev: Set<string>) => Set<string>)) => {
-    if (!user) {
-      console.log('[LikedListingsContext] No user, skipping batch update');
+  // Batch update function for CardStack - sync immediately to database
+  const setLikedIdsBatch = useCallback(async (newIds: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+    if (!user) return;
+
+    // Calculate what changed - use functional update to get current state
+    const oldSet = previousLikedIds.current;
+    let newSetCopy: Set<string>;
+
+    if (typeof newIds === 'function') {
+      // Get the current state from setLikedIds callback
+      let currentSet: Set<string> | null = null;
+      setLikedIds(current => {
+        currentSet = current;
+        return current; // Don't update yet, just read
+      });
+      newSetCopy = newIds(currentSet!);
+    } else {
+      newSetCopy = new Set(newIds);
+    }
+
+    const added = Array.from(newSetCopy).filter(id => !oldSet.has(id));
+    const removed = Array.from(oldSet).filter(id => !newSetCopy.has(id));
+
+    // GUARD: Prevent race condition where CardStack initializes with empty Set before context finishes loading
+    // If we have items in oldSet but newSet is completely empty, this is likely CardStack's initial mount
+    // Don't remove everything - just skip this update
+    if (oldSet.size > 0 && newSetCopy.size === 0 && removed.length === oldSet.size) {
       return;
     }
 
-    setLikedIds(currentIds => {
-      const newSet = typeof newIds === 'function' ? newIds(currentIds) : newIds;
-      const oldSet = previousLikedIds.current;
+    if (added.length === 0 && removed.length === 0) {
+      return; // No changes
+    }
 
-      // Create a copy to avoid reference issues
-      const newSetCopy = new Set(newSet);
+    // Update state immediately (optimistic)
+    setLikedIds(newSetCopy);
+    previousLikedIds.current = newSetCopy;
+    localStorage.setItem("haven_liked_listings", JSON.stringify(Array.from(newSetCopy)));
 
-      // Find added and removed IDs
-      const added = Array.from(newSetCopy).filter(id => !oldSet.has(id));
-      const removed = Array.from(oldSet).filter(id => !newSetCopy.has(id));
+    try {
+      const results = await Promise.allSettled([
+        ...added.map(id => addLikedListing(user.id, id)),
+        ...removed.map(id => removeLikedListing(user.id, id))
+      ]);
 
-      console.log('[LikedListingsContext] Batch update:', {
-        oldCount: oldSet.size,
-        newCount: newSetCopy.size,
-        added: added.length,
-        removed: removed.length
-      });
-
-      // Update previous ref
-      previousLikedIds.current = newSetCopy;
-
-      // Save to localStorage immediately for personalization engine
-      const likedArray = Array.from(newSetCopy);
-      localStorage.setItem("haven_liked_listings", JSON.stringify(likedArray));
-
-      // Queue operations for batched sync
-      if (added.length > 0 || removed.length > 0) {
-        // Add to pending queues
-        added.forEach(id => pendingAddsRef.current.add(id));
-        removed.forEach(id => pendingRemovesRef.current.add(id));
-
-        // Clear existing timeout and schedule new batch
-        if (syncTimeoutRef.current) {
-          clearTimeout(syncTimeoutRef.current);
-        }
-
-        // Debounce: wait 500ms after last change before syncing
-        syncTimeoutRef.current = setTimeout(() => {
-          processPendingSync();
-        }, 500);
+      const failures = results.filter(r => r.status === 'rejected');
+      if (failures.length > 0) {
+        console.error('[LikedListingsContext] Database sync failed:', failures);
       }
-
-      return newSetCopy;
-    });
-  }, [user, processPendingSync]);
+    } catch (error) {
+      console.error('[LikedListingsContext] Database sync error:', error);
+    }
+  }, [user]);
 
   return (
     <LikedListingsContext.Provider

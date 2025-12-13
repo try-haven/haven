@@ -44,7 +44,13 @@ export default function SwipeableCard({
   const [hasTriggered, setHasTriggered] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [pendingSwipe, setPendingSwipe] = useState<"left" | "right" | null>(null);
-  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  // Use coordinates from listing if available, otherwise geocode
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(() => {
+    if (listing.latitude && listing.longitude) {
+      return { lat: listing.latitude, lng: listing.longitude };
+    }
+    return null;
+  });
   const [isGeocoding, setIsGeocoding] = useState(false);
   const { user } = useUser();
   const [reviews, setReviews] = useState<Review[]>(listing.reviews || []);

@@ -14,6 +14,7 @@ import {
   shouldUpdateLearnedPreferences,
   calculateLearnedPreferences,
 } from "@/lib/recommendations";
+import confetti from "canvas-confetti";
 
 export default function SwipePage() {
   const router = useRouter();
@@ -25,7 +26,17 @@ export default function SwipePage() {
   const [hasPersonalized, setHasPersonalized] = useState(false);
   const [showPersonalizedMessage, setShowPersonalizedMessage] = useState(false);
   const [totalSwipes, setTotalSwipes] = useState(0);
-  const [pendingPersonalization, setPendingPersonalization] = useState(false);
+
+  // Read reviewed listings on mount - can be reset by Start Over
+  const [initialReviewedIds, setInitialReviewedIds] = useState(() => {
+    const swipeHistory = getSwipeHistory();
+    return new Set(swipeHistory.map(s => s.listingId));
+  });
+
+  // Handler to reset reviewed listings (called by Start Over button)
+  const handleStartOver = () => {
+    setInitialReviewedIds(new Set()); // Reset to empty - show all listings
+  };
 
   // Initialize fake rental history on first load
   useEffect(() => {
@@ -45,19 +56,31 @@ export default function SwipePage() {
     const swipeHistory = getSwipeHistory();
     setTotalSwipes(swipeHistory.length);
 
-    // Apply pending personalization AFTER the swipe (between cards, not during)
-    if (pendingPersonalization && !hasPersonalized) {
-      const newLearnedPreferences = calculateLearnedPreferences(listings, swipeHistory);
-      setSessionLearnedPreferences(newLearnedPreferences);
-      setHasPersonalized(true);
-      setPendingPersonalization(false);
+    // Check for personalization trigger on EVERY swipe (not just when likes change)
+    if (!hasPersonalized && !hasLearnedPreferences && user && listings.length > 0) {
+      const currentSwipeCount = swipeHistory.length;
 
-      // Save to database immediately
-      updateLearnedPreferences(newLearnedPreferences);
+      // After 5 swipes, apply personalization immediately
+      if (currentSwipeCount === 5) {
+        const newLearnedPreferences = calculateLearnedPreferences(listings, swipeHistory);
+        setSessionLearnedPreferences(newLearnedPreferences);
+        setHasPersonalized(true);
 
-      // Show success message briefly
-      setShowPersonalizedMessage(true);
-      setTimeout(() => setShowPersonalizedMessage(false), 4000);
+        // Save to database immediately
+        updateLearnedPreferences(newLearnedPreferences);
+
+        // Show success message briefly
+        setShowPersonalizedMessage(true);
+        setTimeout(() => setShowPersonalizedMessage(false), 4000);
+
+        // Trigger confetti celebration! 🎉
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#6366f1', '#8b5cf6', '#ec4899', '#10b981'],
+        });
+      }
     }
   };
 
@@ -70,22 +93,6 @@ export default function SwipePage() {
   // Check if this is a new user (for learning banner)
   const isLearning = totalSwipes < 5 && !hasLearnedPreferences;
   const swipesRemaining = Math.max(0, 5 - totalSwipes);
-
-  // OPTION B: Re-rank ONCE after first 5 swipes (new users only - the "wow" moment)
-  // But DELAY the re-rank until the next swipe to avoid jarring card changes mid-view
-  useEffect(() => {
-    if (!user || listings.length === 0 || hasPersonalized || pendingPersonalization) return;
-
-    // Don't trigger personalization if user already has learned preferences saved
-    if (hasLearnedPreferences) return;
-
-    const currentSwipeCount = getSwipeHistory().length;
-
-    // After 5 swipes, mark personalization as pending (will apply on next swipe)
-    if (currentSwipeCount === 5) {
-      setPendingPersonalization(true);
-    }
-  }, [likedIds, user, listings, hasPersonalized, pendingPersonalization, hasLearnedPreferences]);
 
   // Save learned preferences when user leaves (captures all session progress)
   useEffect(() => {
@@ -101,7 +108,10 @@ export default function SwipePage() {
       const swipeHistory = getSwipeHistory();
       if (swipeHistory.length >= 5) {
         const newLearnedPreferences = calculateLearnedPreferences(currentListings, swipeHistory);
-        savePreferences(newLearnedPreferences);
+        // Silently try to save (may fail if page is closing)
+        savePreferences(newLearnedPreferences).catch(() => {
+          // Ignore errors during page close - this is expected
+        });
       }
     };
   }, [user, listings, updateLearnedPreferences]);
@@ -114,7 +124,10 @@ export default function SwipePage() {
       const swipeHistory = getSwipeHistory();
       if (swipeHistory.length >= 5) {
         const newLearnedPreferences = calculateLearnedPreferences(listings, swipeHistory);
-        updateLearnedPreferences(newLearnedPreferences);
+        // Silently try to save (will likely fail during page close - this is expected)
+        updateLearnedPreferences(newLearnedPreferences).catch(() => {
+          // Ignore errors - browser cancels requests during unload
+        });
       }
     };
 
@@ -122,7 +135,8 @@ export default function SwipePage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [user, listings, updateLearnedPreferences]);
 
-  // Filter and rank listings based on user preferences and swipe history
+  // Filter and rank listings based on user preferences
+  // NOTE: Array stays stable during session (uses initialReviewedIds from mount)
   const rankedListings = useMemo(() => {
     if (listings.length === 0 || !user) return [];
 
@@ -130,7 +144,6 @@ export default function SwipePage() {
     const userPreferences = sessionLearnedPreferences
       ? { ...user.preferences, learned: sessionLearnedPreferences }
       : user.preferences || {};
-    const swipeHistory = getSwipeHistory();
 
     // OPTIMIZATION: Hard filter before scoring to reduce computation
     let filteredListings = listings;
@@ -272,20 +285,21 @@ export default function SwipePage() {
       });
     }
 
-    // Filter out already-reviewed listings to prevent seeing the same listing again
-    const reviewedIds = new Set(swipeHistory.map(s => s.listingId));
-    filteredListings = filteredListings.filter(listing => !reviewedIds.has(listing.id));
-
     // Cap at 500 listings max to keep scoring fast
     if (filteredListings.length > 500) {
       filteredListings = filteredListings.slice(0, 500);
     }
 
-    // Now score only the filtered subset
-    const ranked = rankListings(filteredListings, userPreferences, swipeHistory);
+    // Rank all listings (including already-reviewed ones)
+    const allRanked = rankListings(filteredListings, userPreferences, []);
 
-    return ranked;
-  }, [listings, user, sessionLearnedPreferences]);
+    // Split into reviewed and new listings
+    const reviewedListings = allRanked.filter(listing => initialReviewedIds.has(listing.id));
+    const newListings = allRanked.filter(listing => !initialReviewedIds.has(listing.id));
+
+    // Return with reviewed first, then new (keeps count consistent - e.g., 1-29 instead of 1-19)
+    return [...reviewedListings, ...newListings];
+  }, [listings, user, sessionLearnedPreferences, initialReviewedIds]);
 
 
   return (
@@ -371,8 +385,9 @@ export default function SwipePage() {
             onViewLiked={() => router.push("/liked-listings")}
             initialCompleted={hasCompletedAll}
             onCompletedChange={setHasCompletedAll}
-            showMatchScores={totalSwipes >= 5 || hasPersonalized}
+            showMatchScores={totalSwipes >= 5 || hasPersonalized || hasLearnedPreferences}
             onSwipeCountUpdate={handleSwipeCountUpdate}
+            onStartOver={handleStartOver}
           />
         ) : (
           <div className="text-center py-12">

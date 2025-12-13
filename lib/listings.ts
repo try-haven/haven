@@ -140,7 +140,10 @@ export async function addLikedListing(userId: string, listingId: string): Promis
   try {
     const { error } = await supabase
       .from('liked_listings')
-      .insert({ user_id: userId, listing_id: listingId });
+      .upsert({ user_id: userId, listing_id: listingId }, {
+        onConflict: 'user_id,listing_id',
+        ignoreDuplicates: true
+      });
 
     return !error;
   } catch (error) {

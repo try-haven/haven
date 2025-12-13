@@ -361,9 +361,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setUser({
         ...user,
         preferences: {
-          ...preferences,
-          latitude: coords?.latitude,
-          longitude: coords?.longitude,
+          ...user.preferences, // Keep existing preferences (including learned!)
+          ...preferences, // Override with new values
+          latitude: coords?.latitude || user.preferences?.latitude,
+          longitude: coords?.longitude || user.preferences?.longitude,
         },
       });
     } catch (error) {
