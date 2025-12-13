@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useEffect } from "react";
 
 interface AdCardProps {
   onSkip: () => void;
@@ -9,6 +10,22 @@ interface AdCardProps {
 }
 
 export default function AdCard({ onSkip, index, total }: AdCardProps) {
+  // Add keyboard support for arrow keys
+  useEffect(() => {
+    // Only add listener if this is the active ad card
+    if (index !== 0) return;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        e.preventDefault();
+        onSkip();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [index, onSkip]);
+
   if (index >= total) return null;
 
   return (
