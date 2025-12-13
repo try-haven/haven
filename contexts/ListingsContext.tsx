@@ -24,6 +24,8 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
         id: listing.id,
         title: listing.title,
         address: listing.address,
+        latitude: listing.latitude ? Number(listing.latitude) : undefined,
+        longitude: listing.longitude ? Number(listing.longitude) : undefined,
         price: Number(listing.price),
         bedrooms: listing.bedrooms,
         bathrooms: listing.bathrooms,

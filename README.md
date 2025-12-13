@@ -272,27 +272,7 @@ for amenity in all_amenities:
 
 **Result**: User strongly prefers parking (15.48) > pool (11.25) > gym (5.0, neutral)
 
-#### 2. **Location Preferences** (City/Neighborhood Within State)
-
-```python
-# Extract location keywords from liked listings
-for listing in liked_listings:
-    parts = listing.address.split(',')  # ["123 Main St", "San Francisco", "CA"]
-    for part in parts:
-        location_keywords[part.trim()] += 1
-
-# Keep locations appearing in 20%+ of liked listings
-preferred_locations = [loc for loc, count in location_keywords
-                       if count >= len(liked_listings) * 0.2]
-```
-
-**Example:**
-- User likes 10 listings: 6 in "Mission District", 7 in "San Francisco", 3 in "Oakland"
-- Threshold: 10 × 0.2 = 2 listings minimum
-- **Learned locations**: ["Mission District" (6), "San Francisco" (7), "Oakland" (3)]
-- Future listings mentioning these areas get neighborhood bonuses in scoring
-
-#### 3. **Quality Preferences**
+#### 2. **Quality Preferences**
 
 ```python
 # Learn preferred image count and description length
@@ -308,7 +288,7 @@ avg_desc_length = median(liked_desc_lengths)
 - Future listings are scored higher if they match this quality level
 - Prevents showing low-effort listings to quality-conscious users
 
-#### 4. **Basic Preferences** (Price, Bedrooms, Bathrooms, Sqft)
+#### 3. **Basic Preferences** (Price, Bedrooms, Bathrooms, Sqft)
 
 ```python
 # Learn implicit preferences from liked listings
@@ -342,26 +322,40 @@ All learned preferences are stored in the **user profile** (Supabase Postgres), 
 -- profiles table (user account)
 ALTER TABLE profiles ADD COLUMN
   -- Explicit preferences (user-set)
+  address TEXT,
+  latitude NUMERIC,              -- Geocoded latitude of user's preferred address
+  longitude NUMERIC,             -- Geocoded longitude of user's preferred address
+  commute_options TEXT[],        -- ["car", "public_transit", "walk", "bike"]
   price_min INTEGER,
   price_max INTEGER,
-  bedrooms INTEGER,
-  bathrooms NUMERIC,
+  bedrooms_min INTEGER,
+  bedrooms_max INTEGER,
+  bathrooms_min NUMERIC,
+  bathrooms_max NUMERIC,
   sqft_min INTEGER,
   sqft_max INTEGER,
   min_rating NUMERIC,
+  weight_distance INTEGER,       -- Default 40 (40% of total score)
+  weight_amenities INTEGER,      -- Default 35 (35% of total score)
+  weight_quality INTEGER,        -- Default 15 (15% of total score)
+  weight_rating INTEGER,         -- Default 10 (10% of total score)
 
-  -- Learned preferences (auto-calculated)
+  -- Learned preferences (auto-calculated from swipe behavior)
   learned_price_min INTEGER,
   learned_price_max INTEGER,
   learned_bedrooms INTEGER,
-  learned_bathrooms NUMERIC,
+  learned_bathrooms NUMERIC,     -- Supports half-bathrooms (1.5, 2.5, etc.)
   learned_sqft_min INTEGER,
   learned_sqft_max INTEGER,
   learned_preferred_amenities JSONB,  -- {"pool": 15.48, "gym": 5.0, ...}
-  learned_preferred_locations TEXT[], -- ["Mission District", "San Francisco"]
   learned_avg_image_count NUMERIC,
   learned_avg_description_length INTEGER,
   learned_preferences_updated_at TIMESTAMP;
+
+-- listings table
+ALTER TABLE listings ADD COLUMN
+  latitude NUMERIC,              -- Geocoded latitude of listing address
+  longitude NUMERIC;             -- Geocoded longitude of listing address
 ```
 
 ### Update Strategy
@@ -503,36 +497,39 @@ This design ensures:
 ### Key Functions
 
 ```typescript
-// Learn preferences from swipe history
+// Geocoding & Distance (lib/geocoding.ts)
+async function geocodeAddress(address: string): Promise<{latitude: number, longitude: number} | null>
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number  // Returns miles
+function scoreByDistance(distanceInMiles: number): number  // 0-1 score
+
+// Learning & Scoring (lib/recommendations.ts)
 function learnFromSwipeHistory(
   swipeHistory: SwipeHistory[],
   allListings: ApartmentListing[]
 ): LearnedPreferences
 
-// Calculate match score for a listing
 function calculateMatchScore(
   listing: ApartmentListing,
   userPreferences: UserPreferences,
   learnedPreferences: LearnedPreferences
 ): number  // 0-100
 
-// Rank all listings by score
 function rankListings(
   listings: ApartmentListing[],
   userPreferences: UserPreferences,
   swipeHistory: SwipeHistory[]
 ): ListingWithScore[]
 
-// Check if preferences need updating
 function shouldUpdateLearnedPreferences(
   userPreferences: UserPreferences,
   minSwipes: number = 5
 ): boolean
 
-// Save learned preferences to database
-async function updateLearnedPreferences(
-  learned: LearnedPreferences
-): Promise<void>
+function getSwipeHistory(): SwipeHistory[]  // Reads from localStorage
+
+// User Profile (contexts/UserContext.tsx)
+async function updateLearnedPreferences(learned: LearnedPreferences): Promise<void>
+async function updatePreferences(preferences: UserPreferences): Promise<void>  // Geocodes address
 ```
 
 ---
@@ -761,9 +758,9 @@ npm run dev
 npm run seed
 ```
 This will:
-- Geocode 42 sample listings using OpenStreetMap Nominatim API
-- Insert listings with latitude/longitude coordinates
-- Takes ~45 seconds due to rate limiting (1 request/second)
+- Geocode 85 sample listings using OpenStreetMap Nominatim API (25 CA, 22 NY, 21 TX)
+- Insert listings with latitude/longitude coordinates for state-based filtering demonstration
+- Takes ~90 seconds due to rate limiting (1 request/second)
 
 #### Check Geocoding Status
 ```bash
@@ -868,8 +865,8 @@ The app uses React Context API and localStorage:
   - `haven_listing_metric_events`: Timestamped events for trends
   - `haven_listing_changes`: Edit history for listings
   - `haven_listing_reviews_{listingId}`: Reviews per listing
-  - `haven_liked_listings_{username}`: User's liked listings
-  - `haven_reviewed_listings_{username}`: User's reviewed listings
+  - `haven_liked_listings`: User's liked listings (synced from LikedListingsContext for personalization)
+  - `haven_reviewed_listings`: All listings user has swiped on (for tracking swipe count)
 
 ### Metrics Tracking
 
@@ -1037,7 +1034,10 @@ Currently using public APIs (OpenStreetMap). For production, you may want to:
 ## 🐛 Known Issues & Fixes
 
 ### Fixed Issues ✅
-- ✅ **Bathroom rounding error** - Fixed: Now rounds learned_bathrooms to nearest integer before database save
+- ✅ **Distance not showing in score breakdown** - Fixed: Added latitude/longitude to ListingsContext mapping
+- ✅ **Learned preferences error** - Fixed: Added missing bedrooms/bathrooms to learned preferences return statement
+- ✅ **Removed unused location learning** - Removed: learned_preferred_locations feature (distance scoring is more accurate)
+- ✅ **Bathroom rounding error** - Fixed: Changed learned_bathrooms from INTEGER to NUMERIC to support half-bathrooms
 - ✅ **LocalStorage sync for liked listings** - Fixed: LikedListingsContext now saves to localStorage for personalization engine
 - ✅ **Learned preferences not saving** - Fixed: Saves immediately at 5 swipes + on page exit
 - ✅ **Distance ranking** - Fixed: Increased weight to 40%, punishing scoring for 50+ miles (0% score)

@@ -22,17 +22,30 @@ interface LearnedPreferences {
   updatedAt?: string;
 }
 
+export interface ScoringWeights {
+  distance: number;   // 0-100 percentage
+  amenities: number;  // 0-100 percentage
+  quality: number;    // 0-100 percentage
+  rating: number;     // 0-100 percentage
+}
+
 interface UserPreferences {
   address?: string;
+  latitude?: number;
+  longitude?: number;
   commute?: CommuteOption[];
   minRating?: number;
   // Apartment preferences (optional - if not set, use learned values)
   priceMin?: number;
   priceMax?: number;
-  bedrooms?: number;
-  bathrooms?: number;
+  bedroomsMin?: number;
+  bedroomsMax?: number;
+  bathroomsMin?: number;
+  bathroomsMax?: number;
   sqftMin?: number;
   sqftMax?: number;
+  // Scoring weights (customizable - defaults to 40/35/15/10)
+  weights?: ScoringWeights;
   // Learned preferences (automatically calculated from swipe behavior)
   learned?: LearnedPreferences;
 }
@@ -136,10 +149,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
             minRating: profile.min_rating,
             priceMin: profile.price_min,
             priceMax: profile.price_max,
-            bedrooms: profile.bedrooms,
-            bathrooms: profile.bathrooms,
+            bedroomsMin: profile.bedrooms_min,
+            bedroomsMax: profile.bedrooms_max,
+            bathroomsMin: profile.bathrooms_min,
+            bathroomsMax: profile.bathrooms_max,
             sqftMin: profile.sqft_min,
             sqftMax: profile.sqft_max,
+            weights: {
+              distance: profile.weight_distance ?? 40,
+              amenities: profile.weight_amenities ?? 35,
+              quality: profile.weight_quality ?? 15,
+              rating: profile.weight_rating ?? 10,
+            },
             learned: {
               priceMin: profile.learned_price_min,
               priceMax: profile.learned_price_max,
@@ -148,7 +169,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
               sqftMin: profile.learned_sqft_min,
               sqftMax: profile.learned_sqft_max,
               preferredAmenities: profile.learned_preferred_amenities || {},
-              preferredLocations: profile.learned_preferred_locations || [],
               avgImageCount: profile.learned_avg_image_count,
               avgDescriptionLength: profile.learned_avg_description_length,
               updatedAt: profile.learned_preferences_updated_at,
@@ -309,10 +329,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
           min_rating: preferences.minRating,
           price_min: preferences.priceMin,
           price_max: preferences.priceMax,
-          bedrooms: preferences.bedrooms,
-          bathrooms: preferences.bathrooms,
+          bedrooms_min: preferences.bedroomsMin,
+          bedrooms_max: preferences.bedroomsMax,
+          bathrooms_min: preferences.bathroomsMin,
+          bathrooms_max: preferences.bathroomsMax,
           sqft_min: preferences.sqftMin,
           sqft_max: preferences.sqftMax,
+          weight_distance: preferences.weights?.distance,
+          weight_amenities: preferences.weights?.amenities,
+          weight_quality: preferences.weights?.quality,
+          weight_rating: preferences.weights?.rating,
         })
         .eq('id', user.id);
 
@@ -335,7 +361,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!user) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update({
           learned_price_min: learned.priceMin,
@@ -345,14 +371,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
           learned_sqft_min: learned.sqftMin,
           learned_sqft_max: learned.sqftMax,
           learned_preferred_amenities: learned.preferredAmenities || {},
-          learned_preferred_locations: learned.preferredLocations || [],
           learned_avg_image_count: learned.avgImageCount,
           learned_avg_description_length: learned.avgDescriptionLength,
           learned_preferences_updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating learned preferences:", {
+          error,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        throw error;
+      }
 
       // Update local user state
       setUser({
@@ -366,7 +400,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         },
       });
     } catch (error) {
-      console.error("Error updating learned preferences:", error);
+      console.error("Error updating learned preferences (catch):", error);
     }
   };
 

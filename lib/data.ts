@@ -11,6 +11,8 @@ export interface ApartmentListing {
     id: string;
     title: string;
     address: string;
+    latitude?: number;
+    longitude?: number;
     price: number;
     bedrooms: number;
     bathrooms: number;

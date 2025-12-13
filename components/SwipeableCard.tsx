@@ -20,6 +20,12 @@ interface SwipeableCardProps {
   isTriggeredCard?: boolean;
   isTopPick?: boolean;
   matchScore?: number;
+  scoreBreakdown?: {
+    distance?: { score: number; percentage: number; label: string };
+    amenities?: { score: number; percentage: number; label: string };
+    quality?: { score: number; percentage: number; label: string };
+    rating?: { score: number; percentage: number; label: string };
+  };
 }
 
 export default function SwipeableCard({
@@ -31,6 +37,7 @@ export default function SwipeableCard({
   isTriggeredCard = false,
   isTopPick = false,
   matchScore,
+  scoreBreakdown,
 }: SwipeableCardProps) {
   const [imageIndex, setImageIndex] = useState(0);
   const [exitX, setExitX] = useState(0);
@@ -321,10 +328,14 @@ export default function SwipeableCard({
 
             {/* Match Score Badge */}
             {matchScore !== undefined && (
-              <div className="absolute top-4 left-4 z-20">
+              <div className="absolute top-4 left-4 z-20 group">
+                {/* Pulsing hint ring - bright and visible on all backgrounds */}
+                <div className="absolute -inset-1 rounded-full bg-indigo-500/60 dark:bg-indigo-400/70 animate-ping pointer-events-none" style={{ animationDuration: '2.5s' }}></div>
+                <div className="absolute -inset-0.5 rounded-full bg-white/40 dark:bg-white/30 animate-ping pointer-events-none" style={{ animationDuration: '2.5s', animationDelay: '0.3s' }}></div>
+
                 {isTopPick ? (
                   // Top Pick badge (80%+)
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-400 to-yellow-300 rounded-full shadow-lg border-2 border-white">
+                  <div className="relative flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-400 to-yellow-300 rounded-full shadow-lg border-2 border-white cursor-help hover:shadow-xl transition-shadow">
                     <svg className="w-4 h-4 text-amber-700 fill-amber-700" viewBox="0 0 20 20">
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
@@ -332,13 +343,74 @@ export default function SwipeableCard({
                     <span className="text-xs font-semibold text-amber-800">
                       {Math.round(matchScore)}%
                     </span>
+                    {/* Info icon hint */}
+                    <svg className="w-3.5 h-3.5 text-amber-700 opacity-60" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
                   </div>
                 ) : (
                   // Regular match score (below 80%)
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-md border border-gray-200 dark:border-gray-700">
+                  <div className="relative flex items-center gap-1.5 px-2.5 py-1 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-md border border-gray-200 dark:border-gray-700 cursor-help hover:shadow-lg transition-shadow">
                     <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                       {Math.round(matchScore)}% match
                     </span>
+                    {/* Info icon hint */}
+                    <svg className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 opacity-60" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+
+                {/* Score Breakdown Tooltip */}
+                {scoreBreakdown && (
+                  <div className="invisible group-hover:visible absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 z-30">
+                    <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Score Breakdown:</div>
+                    <div className="space-y-1.5">
+                      {scoreBreakdown.distance && (
+                        <div className={`flex items-center justify-between text-xs ${scoreBreakdown.distance.score === Math.max(
+                          scoreBreakdown.distance?.score || 0,
+                          scoreBreakdown.amenities?.score || 0,
+                          scoreBreakdown.quality?.score || 0,
+                          scoreBreakdown.rating?.score || 0
+                        ) ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                          <span>📍 Distance: {scoreBreakdown.distance.label}</span>
+                          <span>{Math.round(scoreBreakdown.distance.score)}pts</span>
+                        </div>
+                      )}
+                      {scoreBreakdown.amenities && (
+                        <div className={`flex items-center justify-between text-xs ${scoreBreakdown.amenities.score === Math.max(
+                          scoreBreakdown.distance?.score || 0,
+                          scoreBreakdown.amenities?.score || 0,
+                          scoreBreakdown.quality?.score || 0,
+                          scoreBreakdown.rating?.score || 0
+                        ) ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                          <span>✨ Amenities: {scoreBreakdown.amenities.label}</span>
+                          <span>{Math.round(scoreBreakdown.amenities.score)}pts</span>
+                        </div>
+                      )}
+                      {scoreBreakdown.quality && (
+                        <div className={`flex items-center justify-between text-xs ${scoreBreakdown.quality.score === Math.max(
+                          scoreBreakdown.distance?.score || 0,
+                          scoreBreakdown.amenities?.score || 0,
+                          scoreBreakdown.quality?.score || 0,
+                          scoreBreakdown.rating?.score || 0
+                        ) ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                          <span>📸 Quality: {scoreBreakdown.quality.label}</span>
+                          <span>{Math.round(scoreBreakdown.quality.score)}pts</span>
+                        </div>
+                      )}
+                      {scoreBreakdown.rating && (
+                        <div className={`flex items-center justify-between text-xs ${scoreBreakdown.rating.score === Math.max(
+                          scoreBreakdown.distance?.score || 0,
+                          scoreBreakdown.amenities?.score || 0,
+                          scoreBreakdown.quality?.score || 0,
+                          scoreBreakdown.rating?.score || 0
+                        ) ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                          <span>⭐ Rating: {scoreBreakdown.rating.label}</span>
+                          <span>{Math.round(scoreBreakdown.rating.score)}pts</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -482,8 +554,20 @@ export default function SwipeableCard({
                 </span>
               ))}
               {listing.amenities.length > 3 && (
-                <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs">
-                  +{listing.amenities.length - 3}
+                <span className="relative group inline-block">
+                  <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs cursor-help">
+                    +{listing.amenities.length - 3}
+                  </span>
+                  {/* Tooltip showing remaining amenities */}
+                  <div className="invisible group-hover:visible absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg whitespace-nowrap z-50">
+                    <div className="space-y-1">
+                      {listing.amenities.slice(3).map((amenity, i) => (
+                        <div key={i}>• {amenity}</div>
+                      ))}
+                    </div>
+                    {/* Arrow pointing down */}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                  </div>
                 </span>
               )}
             </div>

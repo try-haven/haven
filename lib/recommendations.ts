@@ -1,6 +1,36 @@
 import { ApartmentListing } from "./data";
 import { calculateDistance, scoreByDistance } from "./geocoding";
 
+interface ScoringWeights {
+  distance: number;   // 0-100 percentage
+  amenities: number;  // 0-100 percentage
+  quality: number;    // 0-100 percentage
+  rating: number;     // 0-100 percentage
+}
+
+// Learned preferences stored in database (uses Record for JSON compatibility)
+interface LearnedPreferences {
+  priceMin?: number;
+  priceMax?: number;
+  sqftMin?: number;
+  sqftMax?: number;
+  preferredAmenities?: Record<string, number>; // Amenity -> weight (stored as Record for database)
+  avgImageCount?: number; // Average number of images in liked listings
+  avgDescriptionLength?: number; // Average description length in liked listings
+  updatedAt?: string; // ISO timestamp of last update
+}
+
+// Internal learned preferences (uses Map for efficient lookups)
+interface LearnedPreferencesInternal {
+  priceMin?: number;
+  priceMax?: number;
+  sqftMin?: number;
+  sqftMax?: number;
+  preferredAmenities?: Map<string, number>; // Amenity -> frequency in liked listings (internal use)
+  avgImageCount?: number; // Average number of images in liked listings
+  avgDescriptionLength?: number; // Average description length in liked listings
+}
+
 interface UserPreferences {
   address?: string;
   latitude?: number; // User's preferred location latitude
@@ -8,28 +38,33 @@ interface UserPreferences {
   commute?: string[];
   priceMin?: number;
   priceMax?: number;
-  bedrooms?: number;
-  bathrooms?: number;
+  bedroomsMin?: number;
+  bedroomsMax?: number;
+  bathroomsMin?: number;
+  bathroomsMax?: number;
   sqftMin?: number;
   sqftMax?: number;
   minRating?: number; // Minimum average rating (0-5 scale)
+  weights?: ScoringWeights; // Custom scoring weights (defaults to 40/35/15/10)
+  learned?: LearnedPreferences; // Learned preferences from swipe behavior
+}
+
+export interface ScoreBreakdown {
+  distance?: { score: number; percentage: number; label: string }; // e.g., "15 mi" or "Nearby"
+  amenities?: { score: number; percentage: number; label: string }; // e.g., "Great match" or "Pool, Gym"
+  quality?: { score: number; percentage: number; label: string };   // e.g., "High quality" or "6 photos"
+  rating?: { score: number; percentage: number; label: string };    // e.g., "4.2★" or "No reviews"
 }
 
 interface ListingWithScore extends ApartmentListing {
   matchScore: number;
   isTopPick: boolean;
+  scoreBreakdown?: ScoreBreakdown;
 }
 
 interface SwipeHistory {
   listingId: string;
   liked: boolean;
-}
-
-interface LearnedPreferences extends Partial<UserPreferences> {
-  preferredAmenities?: Map<string, number>; // Amenity -> frequency in liked listings
-  preferredLocations?: string[]; // Common location keywords (cities, neighborhoods)
-  avgImageCount?: number; // Average number of images in liked listings
-  avgDescriptionLength?: number; // Average description length in liked listings
 }
 
 /**
@@ -39,7 +74,7 @@ interface LearnedPreferences extends Partial<UserPreferences> {
 function learnFromSwipeHistory(
   swipeHistory: SwipeHistory[],
   allListings: ApartmentListing[]
-): LearnedPreferences {
+): LearnedPreferencesInternal {
   // Get all liked listings
   const likedListingIds = swipeHistory.filter((s) => s.liked).map((s) => s.listingId);
   const likedListings = allListings.filter((l) => likedListingIds.includes(l.id));
@@ -101,22 +136,8 @@ function learnFromSwipeHistory(
     amenityFrequency.set(amenity, likeRate * likedCount);
   });
 
-  // Learn location preferences
-  const locationKeywords = new Map<string, number>();
-  likedListings.forEach((listing) => {
-    // Extract city/neighborhood from address (split by comma)
-    const parts = listing.address.split(",").map((s) => s.trim());
-    parts.forEach((part) => {
-      const normalized = part.toLowerCase();
-      locationKeywords.set(normalized, (locationKeywords.get(normalized) || 0) + 1);
-    });
-  });
-
-  // Get top location keywords (appear in at least 20% of liked listings)
-  const minLocationFrequency = Math.max(1, Math.floor(likedListings.length * 0.2));
-  const preferredLocations = Array.from(locationKeywords.entries())
-    .filter(([_, count]) => count >= minLocationFrequency)
-    .map(([location, _]) => location);
+  // Note: We don't learn location preferences because we already use distance scoring
+  // which is more accurate than city/neighborhood matching
 
   // Learn quality preferences
   const imageCounts = likedListings
@@ -127,7 +148,7 @@ function learnFromSwipeHistory(
     .map((l) => l.description?.length || 0);
 
   const avgImageCount = imageCounts.length > 0 ? median(imageCounts) : undefined;
-  const avgDescriptionLength = descriptionLengths.length > 0 ? median(descriptionLengths) : undefined;
+  const avgDescriptionLength = descriptionLengths.length > 0 ? Math.round(median(descriptionLengths)) : undefined;
 
   // Create range around median values (±20% for price/sqft)
   return {
@@ -138,7 +159,6 @@ function learnFromSwipeHistory(
     sqftMin: Math.floor(avgSqft * 0.8),
     sqftMax: Math.ceil(avgSqft * 1.2),
     preferredAmenities: amenityFrequency,
-    preferredLocations,
     avgImageCount,
     avgDescriptionLength,
   };
@@ -158,10 +178,19 @@ function learnFromSwipeHistory(
 function calculateMatchScore(
   listing: ApartmentListing,
   preferences: UserPreferences,
-  learnedPreferences: Partial<UserPreferences>
-): number {
+  learnedPreferences: LearnedPreferencesInternal
+): { score: number; breakdown: ScoreBreakdown } {
   let score = 0;
   let maxScore = 0;
+  const breakdown: ScoreBreakdown = {};
+
+  // Extract custom weights (or use defaults)
+  const weights = preferences.weights || {
+    distance: 40,
+    amenities: 35,
+    quality: 15,
+    rating: 10
+  };
 
   // Helper to add score component
   const addScore = (weight: number, match: number) => {
@@ -185,19 +214,38 @@ function calculateMatchScore(
       listing.longitude
     );
     const locationScore = scoreByDistance(distanceInMiles);
-    addScore(40, locationScore);
+    const locationPoints = weights.distance * locationScore;
+    addScore(weights.distance, locationScore);
+
+    // Generate label
+    let label = "";
+    if (distanceInMiles < 1) label = "< 1 mi";
+    else if (distanceInMiles < 5) label = `${distanceInMiles.toFixed(1)} mi`;
+    else if (distanceInMiles < 15) label = `${Math.round(distanceInMiles)} mi`;
+    else if (distanceInMiles < 50) label = `${Math.round(distanceInMiles)} mi away`;
+    else label = `${Math.round(distanceInMiles)} mi (far)`;
+
+    breakdown.distance = {
+      score: locationPoints,
+      percentage: locationScore * 100,
+      label
+    };
   }
 
   // Amenities match (weight: 35) - SECONDARY BEHAVIORAL FACTOR
   // This is learned from user's swipe behavior
   if (learnedPreferences.preferredAmenities && learnedPreferences.preferredAmenities.size > 0) {
     let amenitiesScore = 0;
+    const matchedAmenities: string[] = [];
 
     if (listing.amenities && listing.amenities.length > 0) {
       // Calculate weighted score based on amenity preferences
       listing.amenities.forEach((amenity) => {
         const normalized = amenity.toLowerCase().trim();
         const preferenceWeight = learnedPreferences.preferredAmenities!.get(normalized) || 0;
+        if (preferenceWeight > 0) {
+          matchedAmenities.push(amenity);
+        }
         amenitiesScore += preferenceWeight;
       });
 
@@ -210,11 +258,34 @@ function calculateMatchScore(
       }
     }
 
-    addScore(35, amenitiesScore);
+    const amenitiesPoints = weights.amenities * amenitiesScore;
+    addScore(weights.amenities, amenitiesScore);
+
+    // Generate label
+    let label = "";
+    if (matchedAmenities.length === 0) label = "No match";
+    else if (matchedAmenities.length <= 2) label = matchedAmenities.join(", ");
+    else label = `${matchedAmenities.slice(0, 2).join(", ")}+`;
+
+    breakdown.amenities = {
+      score: amenitiesPoints,
+      percentage: amenitiesScore * 100,
+      label
+    };
   } else if (listing.amenities && listing.amenities.length > 0) {
     // Fallback: give bonus for having more amenities (before learning kicks in)
     const amenitiesScore = Math.min(1, listing.amenities.length / 8); // 8+ amenities = perfect
-    addScore(35, amenitiesScore);
+    const amenitiesPoints = weights.amenities * amenitiesScore;
+    addScore(weights.amenities, amenitiesScore);
+
+    const topAmenities = listing.amenities.slice(0, 2);
+    const label = topAmenities.length <= 2 ? topAmenities.join(", ") : `${topAmenities.join(", ")}+`;
+
+    breakdown.amenities = {
+      score: amenitiesPoints,
+      percentage: amenitiesScore * 100,
+      label
+    };
   }
 
   // Quality match (weight: 15)
@@ -246,43 +317,71 @@ function calculateMatchScore(
     qualityScore += 0.2; // Some points for any description
   }
 
-  addScore(15, qualityScore);
+  const qualityPoints = weights.quality * qualityScore;
+  addScore(weights.quality, qualityScore);
+
+  // Generate quality label
+  const imageCount = listing.images?.length || 0;
+  let qualityLabel = "";
+  if (imageCount >= 5) qualityLabel = `${imageCount} photos`;
+  else if (imageCount >= 3) qualityLabel = `${imageCount} photos`;
+  else if (imageCount > 0) qualityLabel = `${imageCount} photo${imageCount > 1 ? 's' : ''}`;
+  else qualityLabel = "No photos";
+
+  breakdown.quality = {
+    score: qualityPoints,
+    percentage: qualityScore * 100,
+    label: qualityLabel
+  };
 
   // Rating match (weight: 10)
   // Use average rating from reviews (0-5 scale)
   if (listing.averageRating !== undefined && listing.totalRatings && listing.totalRatings > 0) {
     // Rating is 0-5 scale, normalize to 0-1
     const ratingScore = listing.averageRating / 5.0;
-    addScore(10, ratingScore);
+    const ratingPoints = weights.rating * ratingScore;
+    addScore(weights.rating, ratingScore);
+
+    breakdown.rating = {
+      score: ratingPoints,
+      percentage: ratingScore * 100,
+      label: `${listing.averageRating.toFixed(1)}★`
+    };
   } else {
     // No rating available - give neutral score to not penalize new listings
-    addScore(10, 0.5);
+    addScore(weights.rating, 0.5);
+
+    breakdown.rating = {
+      score: weights.rating * 0.5,
+      percentage: 50,
+      label: "No reviews"
+    };
   }
 
   // Calculate final score (0-100)
   if (maxScore === 0) {
     // Fallback if no scoring factors are available
-    return 50; // Neutral score
+    return { score: 50, breakdown }; // Neutral score
   }
 
-  return (score / maxScore) * 100;
+  return {
+    score: (score / maxScore) * 100,
+    breakdown
+  };
 }
 
 /**
  * Convert learned preferences from stored format (Record) to internal format (Map)
  */
-function convertStoredLearnedPreferences(stored: Partial<UserPreferences>): LearnedPreferences {
+function convertStoredLearnedPreferences(stored: any): LearnedPreferencesInternal {
   const amenitiesRecord = stored.preferredAmenities as Record<string, number> | undefined;
 
   return {
     priceMin: stored.priceMin,
     priceMax: stored.priceMax,
-    bedrooms: stored.bedrooms,
-    bathrooms: stored.bathrooms,
     sqftMin: stored.sqftMin,
     sqftMax: stored.sqftMax,
     preferredAmenities: amenitiesRecord ? new Map(Object.entries(amenitiesRecord)) : undefined,
-    preferredLocations: stored.preferredLocations,
     avgImageCount: stored.avgImageCount,
     avgDescriptionLength: stored.avgDescriptionLength,
   };
@@ -339,7 +438,7 @@ export function rankListings(
   swipeHistory: SwipeHistory[] = []
 ): ListingWithScore[] {
   // Use stored learned preferences if available, otherwise calculate from swipe history
-  let learnedPreferences: LearnedPreferences;
+  let learnedPreferences: LearnedPreferencesInternal;
 
   if (userPreferences.learned && userPreferences.learned.preferredAmenities) {
     // Use stored learned preferences
@@ -351,11 +450,12 @@ export function rankListings(
 
   // Calculate score for each listing
   const listingsWithScores: ListingWithScore[] = listings.map((listing) => {
-    const matchScore = calculateMatchScore(listing, userPreferences, learnedPreferences);
+    const { score: matchScore, breakdown } = calculateMatchScore(listing, userPreferences, learnedPreferences);
 
     return {
       ...listing,
       matchScore,
+      scoreBreakdown: breakdown,
       isTopPick: matchScore >= 80, // Top picks are 80+ match score
     };
   });

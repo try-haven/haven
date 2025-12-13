@@ -590,6 +590,7 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
                   isTriggeredCard={isTriggeredCard}
                   isTopPick={(item.data as any).isTopPick}
                   matchScore={showMatchScores ? (item.data as any).matchScore : undefined}
+                  scoreBreakdown={showMatchScores ? (item.data as any).scoreBreakdown : undefined}
                 />
               );
             }

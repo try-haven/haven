@@ -230,19 +230,21 @@ export default function SwipePage() {
       });
     }
 
-    // Filter by bedrooms if user has set preference (±1 bedroom tolerance)
-    if (userPreferences.bedrooms) {
+    // Filter by bedroom range if user has set preference
+    if (userPreferences.bedroomsMin !== undefined || userPreferences.bedroomsMax !== undefined) {
       filteredListings = filteredListings.filter(listing => {
-        const diff = Math.abs(listing.bedrooms - userPreferences.bedrooms!);
-        return diff <= 1; // Allow exact match or ±1 bedroom
+        const min = userPreferences.bedroomsMin ?? 0;
+        const max = userPreferences.bedroomsMax ?? 999;
+        return listing.bedrooms >= min && listing.bedrooms <= max;
       });
     }
 
-    // Filter by bathrooms if user has set preference (±0.5 bathroom tolerance)
-    if (userPreferences.bathrooms) {
+    // Filter by bathroom range if user has set preference
+    if (userPreferences.bathroomsMin !== undefined || userPreferences.bathroomsMax !== undefined) {
       filteredListings = filteredListings.filter(listing => {
-        const diff = Math.abs(listing.bathrooms - userPreferences.bathrooms!);
-        return diff <= 0.5; // Allow exact match or ±0.5 bathroom
+        const min = userPreferences.bathroomsMin ?? 0;
+        const max = userPreferences.bathroomsMax ?? 999;
+        return listing.bathrooms >= min && listing.bathrooms <= max;
       });
     }
 
@@ -253,6 +255,10 @@ export default function SwipePage() {
         return !listing.averageRating || listing.averageRating >= userPreferences.minRating!;
       });
     }
+
+    // Filter out already-reviewed listings to prevent seeing the same listing again
+    const reviewedIds = new Set(swipeHistory.map(s => s.listingId));
+    filteredListings = filteredListings.filter(listing => !reviewedIds.has(listing.id));
 
     // Cap at 500 listings max to keep scoring fast
     if (filteredListings.length > 500) {

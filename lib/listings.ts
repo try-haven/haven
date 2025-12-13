@@ -89,8 +89,8 @@ export async function updateListing(id: string, updates: Partial<Listing>): Prom
       const coords = await geocodeAddress(updates.address);
       updatesWithCoords = {
         ...updates,
-        latitude: coords?.latitude || null,
-        longitude: coords?.longitude || null,
+        latitude: coords?.latitude || undefined,
+        longitude: coords?.longitude || undefined,
       };
     }
 

@@ -41,16 +41,32 @@ async function resetUserPreferences() {
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
-        // Explicit user preferences
+        // Location preferences
         address: null,
+        latitude: null,
+        longitude: null,
         commute_options: null,
+        // Rating preferences
         min_rating: null,
+        // Price preferences
         price_min: null,
         price_max: null,
-        bedrooms: null,
-        bathrooms: null,
+        // Bedroom/bathroom ranges
+        bedrooms_min: null,
+        bedrooms_max: null,
+        bathrooms_min: null,
+        bathrooms_max: null,
+        // Square footage
         sqft_min: null,
         sqft_max: null,
+        // Scoring weights (reset to defaults)
+        weight_distance: 40,
+        weight_amenities: 35,
+        weight_quality: 15,
+        weight_rating: 10,
+        // Legacy single-value fields (if they exist)
+        bedrooms: null,
+        bathrooms: null,
         // Learned personalization (automatically calculated from swipes)
         learned_price_min: null,
         learned_price_max: null,
@@ -59,7 +75,6 @@ async function resetUserPreferences() {
         learned_sqft_min: null,
         learned_sqft_max: null,
         learned_preferred_amenities: {},
-        learned_preferred_locations: [],
         learned_avg_image_count: null,
         learned_avg_description_length: null,
         learned_preferences_updated_at: null,
@@ -68,8 +83,11 @@ async function resetUserPreferences() {
 
     if (updateError) throw updateError;
 
-    console.log('✓ Reset explicit user preferences');
-    console.log('✓ Reset learned personalization (amenities, locations, quality signals)');
+    console.log('✓ Reset location preferences (address, coordinates, commute)');
+    console.log('✓ Reset rating preferences');
+    console.log('✓ Reset apartment preferences (price, bedrooms, bathrooms, sqft)');
+    console.log('✓ Reset scoring weights to defaults (distance: 40%, amenities: 35%, quality: 15%, rating: 10%)');
+    console.log('✓ Reset learned personalization (amenities, quality signals)');
 
     // Delete swipe history (reviewed listings)
     const { error: reviewedError } = await supabase
