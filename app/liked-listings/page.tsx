@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import LikedListings from "@/components/LikedListings";
 import { useUser } from "@/contexts/UserContext";
@@ -12,13 +12,6 @@ export default function LikedListingsPage() {
   const { user, isLoggedIn } = useUser();
   const { likedIds, likedCount, toggleLike, loading: likedLoading } = useLikedListingsContext();
   const { listings, isLoading: isLoadingListings } = useListings();
-
-  // Redirect to home page if user logs out
-  useEffect(() => {
-    if (!isLoggedIn) {
-      router.push("/");
-    }
-  }, [isLoggedIn, router]);
 
   const likedListings = useMemo(() =>
     listings.filter((listing) => likedIds.has(listing.id)),
