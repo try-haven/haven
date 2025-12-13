@@ -8,15 +8,15 @@ import { useUser } from "@/contexts/UserContext";
 
 export default function MyReviewsPage() {
   const router = useRouter();
-  const { isLoggedIn } = useUser();
+  const { isLoggedIn, loading } = useUser();
   const { likedCount } = useLikedListingsContext();
 
-  // Redirect to home page if user logs out
+  // Redirect to home page if user logs out (but not during initial load)
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn && !loading) {
       router.push("/");
     }
-  }, [isLoggedIn, router]);
+  }, [isLoggedIn, loading, router]);
 
   return (
     <ReviewedListings

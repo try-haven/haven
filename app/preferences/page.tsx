@@ -38,15 +38,15 @@ function PreferencesContent() {
   }, [searchParams, user]);
 
   useEffect(() => {
-    // Redirect to home if not logged in
-    if (!isLoggedIn) {
+    // Redirect to home if not logged in (but not during initial load)
+    if (!isLoggedIn && !user) {
       router.push("/");
     }
     // Managers don't need preferences - redirect to dashboard
     if (isManager) {
       router.push("/manager/dashboard");
     }
-  }, [isLoggedIn, isManager, router]);
+  }, [isLoggedIn, isManager, router, user]);
 
   // Don't render if not logged in or if user is a manager
   if (!isLoggedIn || isManager) {

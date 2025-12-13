@@ -17,7 +17,7 @@ import {
 
 export default function SwipePage() {
   const router = useRouter();
-  const { user, updateLearnedPreferences, isLoggedIn } = useUser();
+  const { user, updateLearnedPreferences, isLoggedIn, loading } = useUser();
   const { likedIds, likedCount, setLikedIds } = useLikedListingsContext();
   const { listings, isLoading: isLoadingListings } = useListings();
   const [hasCompletedAll, setHasCompletedAll] = useState(false);
@@ -27,12 +27,12 @@ export default function SwipePage() {
   const [totalSwipes, setTotalSwipes] = useState(0);
   const [pendingPersonalization, setPendingPersonalization] = useState(false);
 
-  // Redirect to home page if user logs out
+  // Redirect to home page if user logs out (but not during initial load)
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn && !loading) {
       router.push("/");
     }
-  }, [isLoggedIn, router]);
+  }, [isLoggedIn, loading, router]);
 
   // Initialize fake rental history on first load
   useEffect(() => {
