@@ -239,7 +239,7 @@ function calculateMatchScore(
     let label = "";
     if (matchedAmenities.length === 0) label = "No match";
     else if (matchedAmenities.length <= 2) label = matchedAmenities.join(", ");
-    else label = `${matchedAmenities.slice(0, 2).join(", ")}+`;
+    else label = matchedAmenities.slice(0, 2).join(", ");
 
     breakdown.amenities = {
       score: amenitiesPoints,
@@ -253,7 +253,7 @@ function calculateMatchScore(
     addScore(weights.amenities, amenitiesScore);
 
     const topAmenities = listing.amenities.slice(0, 2);
-    const label = topAmenities.length <= 2 ? topAmenities.join(", ") : `${topAmenities.join(", ")}+`;
+    const label = topAmenities.join(", ");
 
     breakdown.amenities = {
       score: amenitiesPoints,
