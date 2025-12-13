@@ -68,8 +68,14 @@ export default function SwipePage() {
     }
   };
 
+  // Check if user has learned preferences saved to database (memoized for stable reference)
+  const hasLearnedPreferences = useMemo(() => {
+    return user?.preferences?.learned?.preferredAmenities &&
+      Object.keys(user.preferences.learned.preferredAmenities).length > 0;
+  }, [user?.preferences?.learned?.preferredAmenities]);
+
   // Check if this is a new user (for learning banner)
-  const isLearning = totalSwipes < 5;
+  const isLearning = totalSwipes < 5 && !hasLearnedPreferences;
   const swipesRemaining = Math.max(0, 5 - totalSwipes);
 
   // OPTION B: Re-rank ONCE after first 5 swipes (new users only - the "wow" moment)
@@ -77,13 +83,16 @@ export default function SwipePage() {
   useEffect(() => {
     if (!user || listings.length === 0 || hasPersonalized || pendingPersonalization) return;
 
+    // Don't trigger personalization if user already has learned preferences saved
+    if (hasLearnedPreferences) return;
+
     const currentSwipeCount = getSwipeHistory().length;
 
     // After 5 swipes, mark personalization as pending (will apply on next swipe)
     if (currentSwipeCount === 5) {
       setPendingPersonalization(true);
     }
-  }, [likedIds, user, listings, hasPersonalized, pendingPersonalization]);
+  }, [likedIds, user, listings, hasPersonalized, pendingPersonalization, hasLearnedPreferences]);
 
   // Save learned preferences when user leaves (captures all session progress)
   useEffect(() => {
