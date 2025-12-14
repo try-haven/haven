@@ -51,9 +51,20 @@ export default function ProfilePage() {
         },
       });
 
-      // Clear local storage swipe history
+      // Clear all user-specific local storage
       if (typeof window !== 'undefined') {
         localStorage.removeItem('haven_swipe_history');
+        localStorage.removeItem('haven_swipe_position');
+        localStorage.removeItem('haven_reviewed_listings');
+        localStorage.removeItem('haven_listing_metrics');
+        localStorage.removeItem('haven_listing_metric_events');
+
+        // Clear all cached listing reviews
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('haven_listing_reviews_')) {
+            localStorage.removeItem(key);
+          }
+        });
       }
 
       setResetSuccess(true);

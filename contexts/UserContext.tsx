@@ -369,11 +369,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
         // If we can't delete the auth user, still proceed with cleanup
       }
 
-      // Clear local storage
+      // Clear all local storage
       if (typeof window !== 'undefined') {
         localStorage.removeItem('haven_liked_listings');
         localStorage.removeItem('haven_swipe_history');
+        localStorage.removeItem('haven_swipe_position');
+        localStorage.removeItem('haven_reviewed_listings');
+        localStorage.removeItem('haven_listing_metrics');
+        localStorage.removeItem('haven_listing_metric_events');
         localStorage.removeItem('haven-auth-token');
+
+        // Clear all cached listing reviews
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('haven_listing_reviews_')) {
+            localStorage.removeItem(key);
+          }
+        });
       }
 
       // Sign out
