@@ -11,10 +11,17 @@ import { getAllListings } from "@/lib/listings";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
-function ListingContent() {
+// Wrapper component that uses useSearchParams
+function ListingPageWrapper() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const listingId = searchParams.get("id");
+
+  return <ListingContent listingId={listingId} />;
+}
+
+// Content component with all the logic
+function ListingContent({ listingId }: { listingId: string | null }) {
+  const router = useRouter();
   const [imageIndex, setImageIndex] = useState(0);
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -80,15 +87,6 @@ function ListingContent() {
     };
   }, [listingId]);
 
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
-        <div className="text-gray-500 dark:text-gray-400">Loading listing...</div>
-      </div>
-    );
-  }
-
   useEffect(() => {
     let cancelled = false;
 
@@ -153,6 +151,15 @@ function ListingContent() {
       cancelled = true;
     };
   }, [listingId, listing]);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-gray-500">Loading listing...</div>
+      </div>
+    );
+  }
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -241,7 +248,7 @@ function ListingContent() {
 
   if (!listingId || !listing) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">🏠</div>
           <p className={textStyles.headingSmall}>Listing not found</p>
@@ -257,9 +264,9 @@ function ListingContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-100">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm">
+      <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -288,10 +295,10 @@ function ListingContent() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="grid md:grid-cols-2 gap-0">
             {/* Image Gallery */}
-            <div className="relative h-96 md:h-auto bg-gray-200 dark:bg-gray-700">
+            <div className="relative h-96 md:h-auto bg-gray-200">
               {listing.images[imageIndex] && (
                 <Image
                   src={listing.images[imageIndex]}
@@ -340,7 +347,7 @@ function ListingContent() {
               <h1 className={`${textStyles.headingLarge} mb-2`}>{listing.title}</h1>
 
               <div className="flex items-center gap-2 mb-4">
-                <span className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
+                <span className="text-3xl font-bold text-indigo-600">
                   ${listing.price.toLocaleString()}/mo
                 </span>
               </div>
@@ -360,10 +367,10 @@ function ListingContent() {
                           key={index}
                           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
                             isPriceDecrease
-                              ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+                              ? "bg-green-50 border border-green-200"
                               : isPriceIncrease
-                              ? "bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800"
-                              : "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
+                              ? "bg-orange-50 border border-orange-200"
+                              : "bg-blue-50 border border-blue-200"
                           }`}
                         >
                           <span className="text-lg">
@@ -372,10 +379,10 @@ function ListingContent() {
                           <div className="flex-1">
                             <span className={`font-medium ${
                               isPriceDecrease
-                                ? "text-green-800 dark:text-green-200"
+                                ? "text-green-800"
                                 : isPriceIncrease
-                                ? "text-orange-800 dark:text-orange-200"
-                                : "text-blue-800 dark:text-blue-200"
+                                ? "text-orange-800"
+                                : "text-blue-800"
                             }`}>
                               {isPriceChange ? (
                                 <>
@@ -391,10 +398,10 @@ function ListingContent() {
                           </div>
                           <span className={`text-xs ${
                             isPriceDecrease
-                              ? "text-green-600 dark:text-green-400"
+                              ? "text-green-600"
                               : isPriceIncrease
-                              ? "text-orange-600 dark:text-orange-400"
-                              : "text-blue-600 dark:text-blue-400"
+                              ? "text-orange-600"
+                              : "text-blue-600"
                           }`}>
                             {getTimeAgo(change.timestamp)}
                           </span>
@@ -469,14 +476,14 @@ function ListingContent() {
                   </div>
                   <div className="space-y-3 max-h-60 overflow-y-auto">
                     {reviews.slice(0, 5).map((review) => (
-                      <div key={review.id} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                      <div key={review.id} className="bg-gray-50 p-3 rounded-lg">
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`${textStyles.bodySmall} font-semibold`}>
                             {review.userName}
                           </span>
                           <div className="flex">
                             {[...Array(5)].map((_, i) => (
-                              <span key={i} className={i < review.rating ? "text-yellow-500" : "text-gray-300 dark:text-gray-600"}>
+                              <span key={i} className={i < review.rating ? "text-yellow-500" : "text-gray-300"}>
                                 ★
                               </span>
                             ))}
@@ -492,7 +499,7 @@ function ListingContent() {
           </div>
 
           {/* Map Section */}
-          <div className="border-t border-gray-200 dark:border-gray-700">
+          <div className="border-t border-gray-200">
             <div className="p-6">
               <h2 className={`${textStyles.headingSmall} mb-3`}>Location</h2>
               <p className={`${textStyles.body} mb-4`}>{listing.address}</p>
@@ -511,10 +518,12 @@ function ListingContent() {
 
 export default function ListingDetailPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-      <div className="text-gray-500 dark:text-gray-400">Loading...</div>
-    </div>}>
-      <ListingContent />
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    }>
+      <ListingPageWrapper />
     </Suspense>
   );
 }
