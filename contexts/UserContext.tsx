@@ -112,9 +112,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('[UserContext] Auth state changed:', event);
       if (session?.user) {
+        // Set loading while fetching profile to prevent premature redirects
+        setLoading(true);
         await loadUserProfile(session.user);
+        setLoading(false);
       } else {
         setUser(null);
+        setLoading(false);
       }
     });
 
