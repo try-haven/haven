@@ -27,31 +27,6 @@ function ListingContent() {
   }>>([]);
   const [listing, setListing] = useState<ApartmentListing | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-
-  // Initialize dark mode from localStorage and system preference
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const stored = localStorage.getItem('darkMode');
-    if (stored !== null) {
-      setDarkMode(stored === 'true');
-    } else {
-      setDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
-    }
-  }, []);
-
-  // Apply dark mode class to document
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('darkMode', String(darkMode));
-  }, [darkMode]);
 
   // Fetch listing data directly without using contexts
   useEffect(() => {
@@ -269,13 +244,6 @@ function ListingContent() {
               <h1 className={`${textStyles.heading} text-xl`}>Listing Details</h1>
             </div>
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                aria-label="Toggle dark mode"
-              >
-                {darkMode ? '☀️' : '🌙'}
-              </button>
               <button
                 onClick={handleShare}
                 className={buttonStyles.secondary}
