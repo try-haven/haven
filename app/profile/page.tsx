@@ -9,11 +9,13 @@ import { useLikedListingsContext } from "@/contexts/LikedListingsContext";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, updatePreferences, loading } = useUser();
+  const { user, updatePreferences, loading, deleteAccount } = useUser();
   const { clearAllLikes } = useLikedListingsContext();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleResetAccount = async () => {
     setIsResetting(true);
@@ -66,6 +68,25 @@ export default function ProfilePage() {
       alert("Failed to reset account. Please try again.");
     } finally {
       setIsResetting(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      const result = await deleteAccount();
+
+      if (result.success) {
+        // Redirect to home page
+        router.replace('/');
+      } else {
+        alert(result.error || "Failed to delete account. Please try again.");
+        setIsDeleting(false);
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      alert("Failed to delete account. Please try again.");
+      setIsDeleting(false);
     }
   };
 
@@ -181,6 +202,60 @@ export default function ProfilePage() {
                     <button
                       onClick={() => setShowResetConfirm(false)}
                       disabled={isResetting}
+                      className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Delete Account Section */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
+              <h2 className={`${textStyles.heading} mb-2 text-red-700 dark:text-red-500`}>
+                Delete Account Permanently
+              </h2>
+              <p className={`${textStyles.body} text-gray-600 dark:text-gray-400 mb-4`}>
+                Permanently delete your account and all associated data. This action cannot be undone.
+              </p>
+
+              {!showDeleteConfirm ? (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                >
+                  Delete Account
+                </button>
+              ) : (
+                <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 rounded-lg p-4">
+                  <p className={`${textStyles.body} text-red-900 dark:text-red-100 font-bold mb-3`}>
+                    ⚠️ WARNING: This action is permanent and cannot be undone!
+                  </p>
+                  <p className={`${textStyles.bodySmall} text-red-800 dark:text-red-200 mb-4`}>
+                    Deleting your account will permanently remove:
+                  </p>
+                  <ul className={`${textStyles.bodySmall} text-red-800 dark:text-red-200 mb-4 list-disc list-inside space-y-1`}>
+                    <li>Your account and profile</li>
+                    <li>All liked listings</li>
+                    <li>All reviews you've written</li>
+                    <li>All learned preferences and settings</li>
+                    <li>All swipe history</li>
+                  </ul>
+                  <p className={`${textStyles.body} text-red-900 dark:text-red-100 font-semibold mb-4`}>
+                    Are you absolutely sure you want to delete your account?
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleDeleteAccount}
+                      disabled={isDeleting}
+                      className="px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isDeleting ? "Deleting..." : "Yes, Delete My Account Permanently"}
+                    </button>
+                    <button
+                      onClick={() => setShowDeleteConfirm(false)}
+                      disabled={isDeleting}
                       className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Cancel

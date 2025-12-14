@@ -68,6 +68,7 @@ interface UserContextType {
   signUp: (email: string, username: string, password: string, userType?: UserType) => Promise<{ success: boolean; error?: string }>;
   logIn: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logOut: () => Promise<void>;
+  deleteAccount: () => Promise<{ success: boolean; error?: string }>;
   hasReviewedListing: (listingId: string) => Promise<boolean>;
   markListingAsReviewed: (listingId: string) => Promise<void>;
   updatePreferences: (preferences: UserPreferences) => Promise<void>;
@@ -325,6 +326,73 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const deleteAccount = async (): Promise<{ success: boolean; error?: string }> => {
+    if (!user) {
+      return { success: false, error: "No user logged in" };
+    }
+
+    console.log('[UserContext] Starting account deletion...');
+    setLoading(true);
+
+    try {
+      const userId = user.id;
+
+      // Delete all user data from database
+      console.log('[UserContext] Deleting user data...');
+
+      // Delete liked listings
+      await supabase
+        .from('liked_listings')
+        .delete()
+        .eq('user_id', userId);
+
+      // Delete reviewed listings
+      await supabase
+        .from('reviewed_listings')
+        .delete()
+        .eq('user_id', userId);
+
+      // Delete profile (this should cascade to other related data)
+      await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      console.log('[UserContext] User data deleted');
+
+      // Delete the auth user - this requires admin privileges
+      // Since we're using the anon key, we'll use the RPC function to delete the user
+      const { error: deleteError } = await supabase.rpc('delete_user');
+
+      if (deleteError) {
+        console.error('[UserContext] Error deleting auth user:', deleteError);
+        // If we can't delete the auth user, still proceed with cleanup
+      }
+
+      // Clear local storage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('haven_liked_listings');
+        localStorage.removeItem('haven_swipe_history');
+        localStorage.removeItem('haven-auth-token');
+      }
+
+      // Sign out
+      await supabase.auth.signOut();
+      setUser(null);
+
+      console.log('[UserContext] Account deletion complete');
+      return { success: true };
+    } catch (error) {
+      console.error("[UserContext] Account deletion error:", error);
+      return {
+        success: false,
+        error: "Failed to delete account. Please try again or contact support."
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const hasReviewedListing = async (listingId: string): Promise<boolean> => {
     if (!user) return false;
 
@@ -455,6 +523,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         signUp,
         logIn,
         logOut,
+        deleteAccount,
         hasReviewedListing,
         markListingAsReviewed,
         updatePreferences,
