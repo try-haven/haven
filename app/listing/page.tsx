@@ -16,8 +16,8 @@ const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 function ListingContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user } = useUser();
-  const { listings } = useListings();
+  const { user, loading: userLoading } = useUser();
+  const { listings, isLoading: listingsLoading } = useListings();
   const listingId = searchParams.get("id");
   const [imageIndex, setImageIndex] = useState(0);
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
@@ -34,6 +34,15 @@ function ListingContent() {
     listings.find(l => l.id === listingId) || null,
     [listings, listingId]
   );
+
+  // Wait for contexts to finish loading before rendering
+  if (userLoading || listingsLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <div className="text-gray-500 dark:text-gray-400">Loading listing...</div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (!listingId || !listing) return;

@@ -18,7 +18,7 @@ import confetti from "canvas-confetti";
 
 export default function SwipePage() {
   const router = useRouter();
-  const { user, updateLearnedPreferences } = useUser();
+  const { user, updateLearnedPreferences, loading: userLoading } = useUser();
   const { likedIds, likedCount, setLikedIds } = useLikedListingsContext();
   const { listings, isLoading: isLoadingListings } = useListings();
   const [hasCompletedAll, setHasCompletedAll] = useState(false);
@@ -26,6 +26,9 @@ export default function SwipePage() {
   const [hasPersonalized, setHasPersonalized] = useState(false);
   const [showPersonalizedMessage, setShowPersonalizedMessage] = useState(false);
   const [totalSwipes, setTotalSwipes] = useState(0);
+
+  // Wait for contexts to finish loading before rendering to prevent navigation loops
+  const isLoading = userLoading || isLoadingListings;
 
   // Read reviewed listings on mount - can be reset by Start Over
   const [initialReviewedIds, setInitialReviewedIds] = useState(() => {
@@ -301,6 +304,15 @@ export default function SwipePage() {
     return [...reviewedListings, ...newListings];
   }, [listings, user, sessionLearnedPreferences, initialReviewedIds]);
 
+
+  // Show loading screen while contexts initialize to prevent navigation loops
+  if (isLoading) {
+    return (
+      <div className="h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <div className="text-gray-500 dark:text-gray-400">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen md:min-h-screen overflow-hidden md:overflow-auto bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
