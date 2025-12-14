@@ -63,6 +63,10 @@ export default function SharedNavbar({
     router.push("/swipe");
   };
 
+  const handleProfile = () => {
+    router.push("/profile");
+  };
+
   const handleBackToHome = () => {
     // Always go to home page (/), not swipe
     // Only add ?home=true if user is logged in (to prevent auto-redirect)
@@ -147,6 +151,12 @@ export default function SharedNavbar({
               className={buttonStyles.nav}
             >
               Swipe
+            </button>
+            <button
+              onClick={handleProfile}
+              className={buttonStyles.navHideMobile}
+            >
+              Profile
             </button>
           </>
         )}

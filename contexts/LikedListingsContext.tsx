@@ -13,6 +13,7 @@ interface LikedListingsContextType {
   setLikedIds: (newIds: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
   reload: () => Promise<void>;
   flushPendingSync: () => Promise<void>;
+  clearAllLikes: () => Promise<void>;
 }
 
 const LikedListingsContext = createContext<LikedListingsContextType | undefined>(undefined);
@@ -212,6 +213,30 @@ export function LikedListingsProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  // Clear all liked listings
+  const clearAllLikes = useCallback(async () => {
+    if (!user) return;
+
+    console.log('[LikedListingsContext] Clearing all likes...');
+    const currentLikes = Array.from(likedIds);
+
+    // Clear state and localStorage immediately
+    setLikedIds(new Set());
+    previousLikedIds.current = new Set();
+    localStorage.setItem("haven_liked_listings", JSON.stringify([]));
+
+    // Remove from database
+    try {
+      await Promise.all(
+        currentLikes.map(id => removeLikedListing(user.id, id))
+      );
+      console.log('[LikedListingsContext] All likes cleared successfully');
+    } catch (error) {
+      console.error('[LikedListingsContext] Error clearing likes:', error);
+      throw error;
+    }
+  }, [user, likedIds]);
+
   return (
     <LikedListingsContext.Provider
       value={{
@@ -223,6 +248,7 @@ export function LikedListingsProvider({ children }: { children: ReactNode }) {
         setLikedIds: setLikedIdsBatch,
         reload: loadLikedListings,
         flushPendingSync,
+        clearAllLikes,
       }}
     >
       {children}
