@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { DarkModeProvider } from "@/contexts/DarkModeContext";
 import { ConditionalProviders } from "@/components/ConditionalProviders";
 
 const geistSans = Geist({
@@ -43,9 +42,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <DarkModeProvider>
-          <ConditionalProviders>{children}</ConditionalProviders>
-        </DarkModeProvider>
+        <ConditionalProviders>{children}</ConditionalProviders>
       </body>
     </html>
   );
