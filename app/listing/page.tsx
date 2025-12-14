@@ -31,6 +31,8 @@ function ListingContent() {
 
   // Initialize dark mode from localStorage and system preference
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const stored = localStorage.getItem('darkMode');
     if (stored !== null) {
       setDarkMode(stored === 'true');
@@ -41,6 +43,8 @@ function ListingContent() {
 
   // Apply dark mode class to document
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     if (darkMode) {
       document.documentElement.classList.add('dark');
     } else {
