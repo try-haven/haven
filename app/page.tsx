@@ -34,6 +34,15 @@ function HomeContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, isLoggedIn, isExplicitHome, isManager]); // Only run when login status or explicit home changes
 
+  // Show loading while user is being authenticated and redirect is pending
+  if (isLoggedIn && !isExplicitHome) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <div className="text-gray-500 dark:text-gray-400">Redirecting...</div>
+      </div>
+    );
+  }
+
   // Marketing landing page
   if (view === "marketing") {
     return (

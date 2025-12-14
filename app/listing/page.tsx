@@ -1,23 +1,20 @@
 "use client";
 
-import { useEffect, useState, Suspense, useMemo } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ApartmentListing, Review } from "@/lib/data";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { textStyles, buttonStyles, badgeStyles } from "@/lib/styles";
 import HavenLogo from "@/components/HavenLogo";
-import { useUser } from "@/contexts/UserContext";
 import DarkModeToggle from "@/components/DarkModeToggle";
-import { useListings } from "@/contexts/ListingsContext";
+import { getAllListings } from "@/lib/listings";
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
 function ListingContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user, loading: userLoading } = useUser();
-  const { listings, isLoading: listingsLoading } = useListings();
   const listingId = searchParams.get("id");
   const [imageIndex, setImageIndex] = useState(0);
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
@@ -29,14 +26,53 @@ function ListingContent() {
     newValue: any;
     timestamp: number;
   }>>([]);
+  const [listing, setListing] = useState<ApartmentListing | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const listing = useMemo(() =>
-    listings.find(l => l.id === listingId) || null,
-    [listings, listingId]
-  );
+  // Fetch listing data directly without using contexts
+  useEffect(() => {
+    async function loadListing() {
+      if (!listingId) {
+        setIsLoading(false);
+        return;
+      }
 
-  // Wait for contexts to finish loading before rendering
-  if (userLoading || listingsLoading) {
+      try {
+        const supabaseListings = await getAllListings();
+        const found = supabaseListings.find(l => l.id === listingId);
+
+        if (found) {
+          const converted: ApartmentListing = {
+            id: found.id,
+            title: found.title,
+            address: found.address,
+            latitude: found.latitude ? Number(found.latitude) : undefined,
+            longitude: found.longitude ? Number(found.longitude) : undefined,
+            price: Number(found.price),
+            bedrooms: found.bedrooms,
+            bathrooms: found.bathrooms,
+            sqft: found.sqft,
+            images: found.images || [],
+            amenities: found.amenities || [],
+            description: found.description,
+            availableFrom: found.available_from,
+            averageRating: found.average_rating ? Number(found.average_rating) : undefined,
+            totalRatings: found.total_ratings || undefined,
+          };
+          setListing(converted);
+        }
+      } catch (error) {
+        console.error("Error loading listing:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadListing();
+  }, [listingId]);
+
+  // Show loading state
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
         <div className="text-gray-500 dark:text-gray-400">Loading listing...</div>
@@ -97,8 +133,8 @@ function ListingContent() {
   const handleShare = async () => {
     const url = window.location.href;
 
-    // Track share in metrics
-    if (listingId && user) {
+    // Track share in metrics (anonymously)
+    if (listingId) {
       const metricsData = localStorage.getItem("haven_listing_metrics");
       const metrics = metricsData ? JSON.parse(metricsData) : {};
 
@@ -116,7 +152,6 @@ function ListingContent() {
         listingId,
         timestamp: Date.now(),
         type: 'share',
-        userId: user.username
       });
       localStorage.setItem("haven_listing_metric_events", JSON.stringify(events));
     }
