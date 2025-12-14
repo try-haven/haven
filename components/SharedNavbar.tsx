@@ -65,7 +65,12 @@ export default function SharedNavbar({
 
   const handleBackToHome = () => {
     // Always go to home page (/), not swipe
-    router.push("/?home=true");
+    // Only add ?home=true if user is logged in (to prevent auto-redirect)
+    if (isLoggedIn) {
+      router.push("/?home=true");
+    } else {
+      router.push("/");
+    }
   };
 
   const handleLogOut = async () => {
@@ -76,7 +81,13 @@ export default function SharedNavbar({
   };
 
   const handleLogoClick = () => {
-    router.push("/?home=true");
+    // Only add ?home=true if user is logged in (to prevent auto-redirect)
+    // If logged out, just go to home without the parameter
+    if (isLoggedIn) {
+      router.push("/?home=true");
+    } else {
+      router.push("/");
+    }
   };
 
   return (
