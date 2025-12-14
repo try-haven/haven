@@ -123,6 +123,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const loadUserProfile = async (authUser: SupabaseUser) => {
     try {
+      console.log('[UserContext] Loading profile for user:', authUser.id);
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -130,15 +131,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (error) {
-        console.error("Error fetching profile:", error);
+        console.error("[UserContext] Error fetching profile:", error);
         // Profile might not exist yet if email confirmation is pending
         if (error.code === 'PGRST116') {
-          console.log("Profile not found - might be pending email confirmation");
+          console.log("[UserContext] Profile not found - might be pending email confirmation");
         }
         throw error;
       }
 
       if (profile) {
+        console.log('[UserContext] Profile loaded successfully:', profile.username);
         setUser({
           id: profile.id,
           email: authUser.email!,
@@ -171,9 +173,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
             },
           },
         });
+        console.log('[UserContext] User state updated');
+      } else {
+        console.log('[UserContext] No profile data returned');
       }
     } catch (error) {
-      console.error("Error loading profile:", error);
+      console.error("[UserContext] Error loading profile:", error);
     }
   };
 
