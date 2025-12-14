@@ -34,6 +34,35 @@ function ListingContent({ listingId }: { listingId: string | null }) {
   }>>([]);
   const [listing, setListing] = useState<ApartmentListing | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Initialize dark mode from localStorage and system preference
+  useEffect(() => {
+    if (typeof window === 'undefined') return () => {};
+
+    const stored = localStorage.getItem('darkMode');
+    if (stored !== null) {
+      setDarkMode(stored === 'true');
+    } else {
+      setDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+
+    return () => {};
+  }, []);
+
+  // Apply dark mode class to document
+  useEffect(() => {
+    if (typeof window === 'undefined') return () => {};
+
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('darkMode', String(darkMode));
+
+    return () => {};
+  }, [darkMode]);
 
   // Fetch listing data directly without using contexts
   useEffect(() => {
@@ -155,8 +184,8 @@ function ListingContent({ listingId }: { listingId: string | null }) {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="text-gray-500">Loading listing...</div>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <div className="text-gray-500 dark:text-gray-400">Loading listing...</div>
       </div>
     );
   }
@@ -248,7 +277,7 @@ function ListingContent({ listingId }: { listingId: string | null }) {
 
   if (!listingId || !listing) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">🏠</div>
           <p className={textStyles.headingSmall}>Listing not found</p>
@@ -264,9 +293,9 @@ function ListingContent({ listingId }: { listingId: string | null }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white shadow-sm">
+      <div className="bg-white dark:bg-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -276,6 +305,13 @@ function ListingContent({ listingId }: { listingId: string | null }) {
               <h1 className={`${textStyles.heading} text-xl`}>Listing Details</h1>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Toggle dark mode"
+              >
+                {darkMode ? '☀️' : '🌙'}
+              </button>
               <button
                 onClick={handleShare}
                 className={buttonStyles.secondary}
@@ -295,10 +331,10 @@ function ListingContent({ listingId }: { listingId: string | null }) {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
           <div className="grid md:grid-cols-2 gap-0">
             {/* Image Gallery */}
-            <div className="relative h-96 md:h-auto bg-gray-200">
+            <div className="relative h-96 md:h-auto bg-gray-200 dark:bg-gray-700">
               {listing.images[imageIndex] && (
                 <Image
                   src={listing.images[imageIndex]}
@@ -476,7 +512,7 @@ function ListingContent({ listingId }: { listingId: string | null }) {
                   </div>
                   <div className="space-y-3 max-h-60 overflow-y-auto">
                     {reviews.slice(0, 5).map((review) => (
-                      <div key={review.id} className="bg-gray-50 p-3 rounded-lg">
+                      <div key={review.id} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`${textStyles.bodySmall} font-semibold`}>
                             {review.userName}
@@ -499,7 +535,7 @@ function ListingContent({ listingId }: { listingId: string | null }) {
           </div>
 
           {/* Map Section */}
-          <div className="border-t border-gray-200">
+          <div className="border-t border-gray-200 dark:border-gray-700">
             <div className="p-6">
               <h2 className={`${textStyles.headingSmall} mb-3`}>Location</h2>
               <p className={`${textStyles.body} mb-4`}>{listing.address}</p>
@@ -519,8 +555,8 @@ function ListingContent({ listingId }: { listingId: string | null }) {
 export default function ListingDetailPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-gray-500 dark:text-gray-400">Loading...</div>
       </div>
     }>
       <ListingPageWrapper />
