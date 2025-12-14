@@ -340,10 +340,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
       const { data, error: rpcError } = await supabase.rpc('delete_user_account');
 
       if (rpcError) {
-        console.error('[UserContext] RPC error:', rpcError);
+        console.error('[UserContext] RPC error details:', {
+          message: rpcError.message,
+          details: rpcError.details,
+          hint: rpcError.hint,
+          code: rpcError.code
+        });
         return {
           success: false,
-          error: `Database error: ${rpcError.message}. Make sure you've run the complete_account_deletion.sql migration.`
+          error: `Database error: ${rpcError.message || 'Function not found'}. You need to run the SQL migration in supabase_migrations/complete_account_deletion.sql first.`
         };
       }
 
