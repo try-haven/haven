@@ -307,7 +307,7 @@ function ListingContent({ listingId }: { listingId: string | null }) {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setDarkMode(!darkMode)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                 aria-label="Toggle dark mode"
               >
                 {darkMode ? '☀️' : '🌙'}
