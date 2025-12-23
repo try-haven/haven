@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { getAllListings, Listing } from "@/lib/listings";
 import { ApartmentListing } from "@/lib/data";
 
@@ -15,9 +15,28 @@ const ListingsContext = createContext<ListingsContextType | undefined>(undefined
 export function ListingsProvider({ children }: { children: ReactNode }) {
   const [listings, setListings] = useState<ApartmentListing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Safety timeout: force loading to false after 10 seconds
+  const setLoadingWithTimeout = (loading: boolean) => {
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = null;
+    }
+
+    setIsLoading(loading);
+
+    if (loading) {
+      loadingTimeoutRef.current = setTimeout(() => {
+        console.warn('[ListingsContext] Loading timeout reached - forcing loading to false');
+        setIsLoading(false);
+        loadingTimeoutRef.current = null;
+      }, 10000); // 10 second timeout
+    }
+  };
 
   const loadListings = async () => {
-    setIsLoading(true);
+    setLoadingWithTimeout(true);
     try {
       console.log('[ListingsContext] Loading listings...');
       const supabaseListings = await getAllListings();
@@ -46,13 +65,19 @@ export function ListingsProvider({ children }: { children: ReactNode }) {
       // Set empty array on error so the UI doesn't get stuck
       setListings([]);
     } finally {
-      setIsLoading(false);
+      setLoadingWithTimeout(false);
       console.log('[ListingsContext] Loading complete');
     }
   };
 
   useEffect(() => {
     loadListings();
+
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
   }, []);
 
   const refreshListings = async () => {

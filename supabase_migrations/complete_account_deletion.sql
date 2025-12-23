@@ -13,14 +13,13 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  user_id uuid;
-  result jsonb;
+  v_user_id uuid;
 BEGIN
   -- Get the current user's ID
-  user_id := auth.uid();
+  v_user_id := auth.uid();
 
   -- Check if user is authenticated
-  IF user_id IS NULL THEN
+  IF v_user_id IS NULL THEN
     RETURN jsonb_build_object(
       'success', false,
       'error', 'Not authenticated'
@@ -30,16 +29,16 @@ BEGIN
   -- Delete all user data in order (to handle foreign key constraints)
 
   -- 1. Delete liked listings
-  DELETE FROM liked_listings WHERE user_id = user_id;
+  DELETE FROM liked_listings WHERE user_id = v_user_id;
 
   -- 2. Delete reviewed listings
-  DELETE FROM reviewed_listings WHERE user_id = user_id;
+  DELETE FROM reviewed_listings WHERE user_id = v_user_id;
 
   -- 3. Delete user profile
-  DELETE FROM profiles WHERE id = user_id;
+  DELETE FROM profiles WHERE id = v_user_id;
 
   -- 4. Delete the auth user
-  DELETE FROM auth.users WHERE id = user_id;
+  DELETE FROM auth.users WHERE id = v_user_id;
 
   -- Return success
   RETURN jsonb_build_object(

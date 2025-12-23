@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { geocodeAddress } from "@/lib/geocoding";
@@ -80,6 +80,26 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const loadedUserIdRef = useRef<string | null>(null); // Track if we've already loaded this user
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Safety timeout: force loading to false after 10 seconds to prevent infinite loading
+  const setLoadingWithTimeout = (isLoading: boolean) => {
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = null;
+    }
+
+    setLoading(isLoading);
+
+    if (isLoading) {
+      loadingTimeoutRef.current = setTimeout(() => {
+        console.warn('[UserContext] Loading timeout reached - forcing loading to false');
+        setLoading(false);
+        loadingTimeoutRef.current = null;
+      }, 10000); // 10 second timeout
+    }
+  };
 
   // Load user from Supabase on mount
   useEffect(() => {
@@ -96,13 +116,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           console.log('[UserContext] Session found, loading profile...');
           await loadUserProfile(session.user);
+          loadedUserIdRef.current = session.user.id; // Mark as loaded
         } else {
           console.log('[UserContext] No session found');
         }
       } catch (error) {
         console.error("[UserContext] Error loading session:", error);
       } finally {
-        setLoading(false);
+        setLoadingWithTimeout(false);
         console.log('[UserContext] Auth initialization complete');
       }
     };
@@ -112,23 +133,44 @@ export function UserProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('[UserContext] Auth state changed:', event);
+
+      // CRITICAL FIX: Ignore TOKEN_REFRESHED events to prevent loading flicker on tab switch
+      // Also ignore INITIAL_SESSION since we handle that in initAuth
+      if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+        console.log('[UserContext] Ignoring', event, 'event - no UI update needed');
+        return;
+      }
+
       if (session?.user) {
-        // Set loading while fetching profile to prevent premature redirects
-        setLoading(true);
-        try {
-          await loadUserProfile(session.user);
-        } catch (error) {
-          console.error('[UserContext] Error in auth state change handler:', error);
-        } finally {
-          setLoading(false);
+        // Only reload profile if user ID changed (prevents redundant loads)
+        if (loadedUserIdRef.current !== session.user.id) {
+          console.log('[UserContext] User changed, loading new profile...');
+          setLoadingWithTimeout(true);
+          try {
+            await loadUserProfile(session.user);
+            loadedUserIdRef.current = session.user.id;
+          } catch (error) {
+            console.error('[UserContext] Error in auth state change handler:', error);
+          } finally {
+            setLoadingWithTimeout(false);
+          }
+        } else {
+          console.log('[UserContext] Same user, skipping profile reload');
         }
       } else {
+        console.log('[UserContext] No session, clearing user state');
         setUser(null);
-        setLoading(false);
+        loadedUserIdRef.current = null;
+        setLoadingWithTimeout(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
   }, []);
 
   const loadUserProfile = async (authUser: SupabaseUser) => {
@@ -311,7 +353,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const logOut = async () => {
     console.log('[UserContext] Starting logout...');
     // Set loading state to prevent race conditions during logout
-    setLoading(true);
+    setLoadingWithTimeout(true);
 
     try {
       // Sign out from Supabase first
@@ -320,13 +362,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       // Clear user state after session is cleared
       setUser(null);
+      loadedUserIdRef.current = null;
       console.log('[UserContext] User state cleared');
     } catch (error) {
       console.error("[UserContext] Logout error:", error);
       // Clear user state even if signOut fails
       setUser(null);
+      loadedUserIdRef.current = null;
     } finally {
-      setLoading(false);
+      setLoadingWithTimeout(false);
       console.log('[UserContext] Logout complete');
     }
   };
@@ -337,7 +381,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
 
     console.log('[UserContext] Starting account deletion...');
-    setLoading(true);
+    setLoadingWithTimeout(true);
 
     try {
       // Call the RPC function to delete everything
@@ -389,6 +433,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // Sign out (this should happen automatically since auth user is deleted, but do it anyway)
       await supabase.auth.signOut();
       setUser(null);
+      loadedUserIdRef.current = null;
 
       console.log('[UserContext] Account deletion complete');
       return { success: true };
@@ -399,7 +444,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         error: "Failed to delete account. Please try again or contact support."
       };
     } finally {
-      setLoading(false);
+      setLoadingWithTimeout(false);
     }
   };
 
