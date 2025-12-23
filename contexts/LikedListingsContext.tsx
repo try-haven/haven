@@ -29,9 +29,13 @@ export function LikedListingsProvider({ children }: { children: ReactNode }) {
   const loadedUserIdRef = useRef<string | null>(null);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasInitializedRef = useRef(false); // Track initial load to handle refresh properly
+  const isLoadingInProgressRef = useRef(false); // Prevent concurrent loads
+  const mountedRef = useRef(true); // Track if component is mounted
 
   // Safety timeout: force loading to false after 12 seconds
   const setLoadingWithTimeout = useCallback((isLoading: boolean) => {
+    if (!mountedRef.current) return; // Don't update state if unmounted
+
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
       loadingTimeoutRef.current = null;
@@ -41,9 +45,11 @@ export function LikedListingsProvider({ children }: { children: ReactNode }) {
 
     if (isLoading) {
       loadingTimeoutRef.current = setTimeout(() => {
+        if (!mountedRef.current) return;
         console.warn('[LikedListingsContext] Loading timeout reached - forcing loading to false');
         setLoading(false);
         loadingTimeoutRef.current = null;
+        isLoadingInProgressRef.current = false; // Reset the flag
       }, 12000); // 12 second timeout (increased from 8)
     }
   }, []);
@@ -91,13 +97,15 @@ export function LikedListingsProvider({ children }: { children: ReactNode }) {
     const userId = user?.id;
 
     if (!userId) {
-      setLikedIds(new Set());
-      previousLikedIds.current = new Set();
-      loadedUserIdRef.current = null;
-      hasInitializedRef.current = true;
-      // Clear localStorage when no user
-      localStorage.removeItem("haven_liked_listings");
-      setLoadingWithTimeout(false);
+      if (mountedRef.current) {
+        setLikedIds(new Set());
+        previousLikedIds.current = new Set();
+        loadedUserIdRef.current = null;
+        hasInitializedRef.current = true;
+        // Clear localStorage when no user
+        localStorage.removeItem("haven_liked_listings");
+        setLoadingWithTimeout(false);
+      }
       return;
     }
 
@@ -109,12 +117,22 @@ export function LikedListingsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Prevent concurrent loads during rapid refreshes
+    if (isLoadingInProgressRef.current && retryCount === 0) {
+      console.log('[LikedListingsContext] Load already in progress, skipping...');
+      return;
+    }
+
+    isLoadingInProgressRef.current = true;
     setLoadingWithTimeout(true);
 
     try {
       console.log('[LikedListingsContext] Loading liked listings for user:', userId, retryCount > 0 ? `(retry ${retryCount})` : '');
       // Load from database (since we now sync immediately, database should be source of truth)
       const ids = await getLikedListings(userId);
+
+      if (!mountedRef.current) return; // Abort if unmounted
+
       console.log('[LikedListingsContext] Loaded', ids.length, 'liked listings');
       const idsSet = new Set(ids);
       setLikedIds(idsSet);
@@ -126,27 +144,38 @@ export function LikedListingsProvider({ children }: { children: ReactNode }) {
       console.error('[LikedListingsContext] Error loading liked listings:', error);
 
       // Retry up to 2 times on failure
-      if (retryCount < 2) {
+      if (retryCount < 2 && mountedRef.current) {
         console.log('[LikedListingsContext] Retrying liked listings load...');
         await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+        if (!mountedRef.current) return; // Check again after timeout
         return loadLikedListings(retryCount + 1);
       }
 
       // After all retries failed, set empty set so UI doesn't get stuck
-      console.error('[LikedListingsContext] All retries failed, setting empty liked listings');
-      setLikedIds(new Set());
-      previousLikedIds.current = new Set();
-      hasInitializedRef.current = true;
-      localStorage.setItem("haven_liked_listings", JSON.stringify([]));
+      if (mountedRef.current) {
+        console.error('[LikedListingsContext] All retries failed, setting empty liked listings');
+        setLikedIds(new Set());
+        previousLikedIds.current = new Set();
+        hasInitializedRef.current = true;
+        localStorage.setItem("haven_liked_listings", JSON.stringify([]));
+      }
     } finally {
-      setLoadingWithTimeout(false);
-      console.log('[LikedListingsContext] Loading complete');
+      isLoadingInProgressRef.current = false;
+      if (mountedRef.current) {
+        setLoadingWithTimeout(false);
+        console.log('[LikedListingsContext] Loading complete');
+      }
     }
   }, [user?.id, setLoadingWithTimeout]); // ✅ FIX: Only depend on user ID, not entire user object
 
   // Load liked listings when user changes
   useEffect(() => {
+    mountedRef.current = true;
     loadLikedListings();
+
+    return () => {
+      mountedRef.current = false;
+    };
   }, [loadLikedListings]);
 
   // Flush pending syncs immediately (for logout, etc.)
@@ -161,6 +190,8 @@ export function LikedListingsProvider({ children }: { children: ReactNode }) {
   // Cleanup: process pending syncs on unmount and clear timeout
   useEffect(() => {
     return () => {
+      mountedRef.current = false;
+      isLoadingInProgressRef.current = false;
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current);
         // Note: Can't await in cleanup, but we try to start the sync

@@ -83,9 +83,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const loadedUserIdRef = useRef<string | null>(null); // Track if we've already loaded this user
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const retryCountRef = useRef(0);
+  const isLoadingInProgressRef = useRef(false); // Prevent concurrent loads
+  const mountedRef = useRef(true); // Track if component is mounted
 
   // Safety timeout: force loading to false after 15 seconds to prevent infinite loading
   const setLoadingWithTimeout = useCallback((isLoading: boolean) => {
+    if (!mountedRef.current) return; // Don't update state if unmounted
+
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
       loadingTimeoutRef.current = null;
@@ -95,19 +99,33 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     if (isLoading) {
       loadingTimeoutRef.current = setTimeout(() => {
+        if (!mountedRef.current) return;
         console.warn('[UserContext] Loading timeout reached - forcing loading to false');
         setLoading(false);
         loadingTimeoutRef.current = null;
+        isLoadingInProgressRef.current = false; // Reset the flag
       }, 15000); // 15 second timeout (increased from 10)
     }
   }, []);
 
   // Load user from Supabase on mount
   useEffect(() => {
+    mountedRef.current = true;
+
     const initAuth = async () => {
+      // Prevent concurrent loads during rapid refreshes
+      if (isLoadingInProgressRef.current) {
+        console.log('[UserContext] Load already in progress, skipping...');
+        return;
+      }
+
+      isLoadingInProgressRef.current = true;
+
       try {
         console.log('[UserContext] Loading session...');
         const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (!mountedRef.current) return; // Abort if unmounted
 
         if (error) {
           console.error('[UserContext] Session error:', error);
@@ -117,6 +135,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           console.log('[UserContext] Session found, loading profile...');
           await loadUserProfile(session.user);
+          if (!mountedRef.current) return; // Check again after async operation
           loadedUserIdRef.current = session.user.id; // Mark as loaded
         } else {
           console.log('[UserContext] No session found');
@@ -124,8 +143,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error("[UserContext] Error loading session:", error);
       } finally {
-        setLoadingWithTimeout(false);
-        console.log('[UserContext] Auth initialization complete');
+        isLoadingInProgressRef.current = false;
+        if (mountedRef.current) {
+          setLoadingWithTimeout(false);
+          console.log('[UserContext] Auth initialization complete');
+        }
       }
     };
 
@@ -167,6 +189,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
+      mountedRef.current = false;
+      isLoadingInProgressRef.current = false;
       subscription.unsubscribe();
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
