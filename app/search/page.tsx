@@ -181,7 +181,7 @@ export default function SearchPage() {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       {/* Navbar */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm px-6 py-4">
+      <div className="bg-white dark:bg-gray-800 shadow-sm px-6 py-4 relative">
         <SharedNavbar likedCount={likedCount} />
       </div>
 
