@@ -301,8 +301,8 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <div className="container mx-auto px-6 max-w-4xl">
-          <div 
-            className={`fixed top-0 left-0 right-0 z-40 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-transform duration-300 ${
+          <div
+            className={`fixed top-0 left-0 right-0 z-[10000] bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-transform duration-300 ${
               isNavbarVisible ? 'translate-y-0' : '-translate-y-full'
             }`}
           >
