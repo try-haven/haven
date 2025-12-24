@@ -36,11 +36,11 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
   const [ratingMin, setRatingMin] = useState<number>(initialPreferences?.ratingMin || 0);
   const [ratingMax, setRatingMax] = useState<number>(initialPreferences?.ratingMax || 5);
 
-  // State for "no preference" toggles
-  const [noPricePreference, setNoPricePreference] = useState(initialPreferences?.priceMin === undefined && initialPreferences?.priceMax === undefined);
-  const [noBedroomsPreference, setNoBedroomsPreference] = useState(!initialPreferences?.bedrooms || initialPreferences.bedrooms.length === 0);
-  const [noBathroomsPreference, setNoBathroomsPreference] = useState(!initialPreferences?.bathrooms || initialPreferences.bathrooms.length === 0);
-  const [noRatingPreference, setNoRatingPreference] = useState(initialPreferences?.ratingMin === undefined && initialPreferences?.ratingMax === undefined);
+  // State for "no preference" toggles - default to false so users see the controls
+  const [noPricePreference, setNoPricePreference] = useState(false);
+  const [noBedroomsPreference, setNoBedroomsPreference] = useState(false);
+  const [noBathroomsPreference, setNoBathroomsPreference] = useState(false);
+  const [noRatingPreference, setNoRatingPreference] = useState(false);
 
   // State for scoring weights
   const [weightDistance, setWeightDistance] = useState<number>(initialPreferences?.weights?.distance ?? 40);
@@ -159,19 +159,8 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
                   <span className="text-sm text-gray-700 dark:text-gray-300">${priceMin.toLocaleString()}</span>
                   <span className="text-sm text-gray-700 dark:text-gray-300">${priceMax.toLocaleString()}</span>
                 </div>
-                <div className="relative pt-1">
-                  <input
-                    type="range"
-                    min="0"
-                    max="10000"
-                    step="100"
-                    value={priceMin}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      if (value <= priceMax) setPriceMin(value);
-                    }}
-                    className="absolute w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-600 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-600 [&::-moz-range-thumb]:border-0"
-                  />
+                <div className="relative h-8 pt-2">
+                  <div className="absolute w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg" />
                   <input
                     type="range"
                     min="0"
@@ -182,7 +171,19 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
                       const value = parseInt(e.target.value);
                       if (value >= priceMin) setPriceMax(value);
                     }}
-                    className="absolute w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-600 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-600 [&::-moz-range-thumb]:border-0"
+                    className="absolute w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer z-10 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:border-0"
+                  />
+                  <input
+                    type="range"
+                    min="0"
+                    max="10000"
+                    step="100"
+                    value={priceMin}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      if (value <= priceMax) setPriceMin(value);
+                    }}
+                    className="absolute w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:border-0"
                   />
                 </div>
               </div>
@@ -321,19 +322,8 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
                   <span className="text-sm text-gray-700 dark:text-gray-300">{ratingMin.toFixed(1)} ⭐</span>
                   <span className="text-sm text-gray-700 dark:text-gray-300">{ratingMax.toFixed(1)} ⭐</span>
                 </div>
-                <div className="relative pt-1">
-                  <input
-                    type="range"
-                    min="0"
-                    max="5"
-                    step="0.5"
-                    value={ratingMin}
-                    onChange={(e) => {
-                      const value = parseFloat(e.target.value);
-                      if (value <= ratingMax) setRatingMin(value);
-                    }}
-                    className="absolute w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-600 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-600 [&::-moz-range-thumb]:border-0"
-                  />
+                <div className="relative h-8 pt-2">
+                  <div className="absolute w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg" />
                   <input
                     type="range"
                     min="0"
@@ -344,7 +334,19 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
                       const value = parseFloat(e.target.value);
                       if (value >= ratingMin) setRatingMax(value);
                     }}
-                    className="absolute w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-600 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-600 [&::-moz-range-thumb]:border-0"
+                    className="absolute w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer z-10 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:border-0"
+                  />
+                  <input
+                    type="range"
+                    min="0"
+                    max="5"
+                    step="0.5"
+                    value={ratingMin}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (value <= ratingMax) setRatingMin(value);
+                    }}
+                    className="absolute w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:border-0"
                   />
                 </div>
               </div>
