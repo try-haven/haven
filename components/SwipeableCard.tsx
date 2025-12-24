@@ -370,7 +370,7 @@ export default function SwipeableCard({
 
                 {/* Score Breakdown Tooltip */}
                 {scoreBreakdown && (
-                  <div className="invisible group-hover:visible absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 z-30">
+                  <div className="invisible group-hover:visible absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 z-10">
                     <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Score Breakdown:</div>
                     <div className="space-y-1.5">
                       {scoreBreakdown.distance && (

@@ -744,7 +744,7 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
       </button>
 
       {/* Progress Indicator */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex gap-2">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
         <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg text-sm font-medium text-gray-700 dark:text-gray-200">
           {items[currentIndex]?.type === "ad" ? getListingIndex(currentIndex) : getListingIndex(currentIndex) + 1} / {listings.length}
         </div>

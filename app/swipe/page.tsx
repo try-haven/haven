@@ -352,7 +352,7 @@ export default function SwipePage() {
       />
 
       <div className="container mx-auto px-4 md:px-6 h-full md:h-auto py-4 md:py-8">
-        <div className="flex items-center justify-between mb-4 md:mb-8 relative z-50">
+        <div className="flex items-center justify-between mb-4 md:mb-8 relative">
           <SharedNavbar
             onPreferencesClick={() => router.push("/preferences")}
             onMyReviewsClick={() => router.push("/my-reviews")}
