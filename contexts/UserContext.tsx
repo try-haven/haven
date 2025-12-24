@@ -521,7 +521,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
         coords = await geocodeAddress(preferences.address);
       }
 
-      const { error } = await supabase
+      // Update database
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({
           address: preferences.address,
@@ -541,19 +542,43 @@ export function UserProvider({ children }: { children: ReactNode }) {
         })
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
+      // Fetch updated profile to ensure consistency
+      const { data: profile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Update local state with confirmed database values
       setUser({
         ...user,
         preferences: {
-          ...user.preferences, // Keep existing preferences (including learned!)
-          ...preferences, // Override with new values
-          latitude: coords?.latitude || user.preferences?.latitude,
-          longitude: coords?.longitude || user.preferences?.longitude,
+          address: profile.address,
+          latitude: profile.latitude,
+          longitude: profile.longitude,
+          commute: profile.commute_options as CommuteOption[],
+          priceMin: profile.price_min,
+          priceMax: profile.price_max,
+          bedrooms: profile.bedrooms,
+          bathrooms: profile.bathrooms,
+          ratingMin: profile.rating_min,
+          ratingMax: profile.rating_max,
+          weights: {
+            distance: profile.weight_distance ?? 40,
+            amenities: profile.weight_amenities ?? 35,
+            quality: profile.weight_quality ?? 15,
+            rating: profile.weight_rating ?? 10,
+          },
+          learned: user.preferences?.learned, // Keep existing learned preferences
         },
       });
     } catch (error) {
       console.error("Error updating preferences:", error);
+      throw error; // Re-throw to let caller handle
     }
   };
 

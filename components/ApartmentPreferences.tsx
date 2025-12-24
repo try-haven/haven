@@ -71,19 +71,23 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
     // Add bedroom selections
     if (!noBedroomsPreference) {
       if (selectedBedrooms.length === 0) {
-        setError("Please select at least one bedroom option");
+        setError("Please select at least one bedroom option or check 'No preference'");
         return;
       }
       preferences.bedrooms = selectedBedrooms;
+    } else {
+      preferences.bedrooms = undefined; // Clear bedrooms if no preference
     }
 
     // Add bathroom selections
     if (!noBathroomsPreference) {
       if (selectedBathrooms.length === 0) {
-        setError("Please select at least one bathroom option");
+        setError("Please select at least one bathroom option or check 'No preference'");
         return;
       }
       preferences.bathrooms = selectedBathrooms;
+    } else {
+      preferences.bathrooms = undefined; // Clear bathrooms if no preference
     }
 
     // Validate and add rating range
@@ -160,7 +164,7 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
                   <span className="text-sm text-gray-700 dark:text-gray-300">${priceMax.toLocaleString()}</span>
                 </div>
                 <div className="relative h-8 pt-2">
-                  <div className="absolute w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                  <div className="absolute w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg pointer-events-none" />
                   <input
                     type="range"
                     min="0"
@@ -171,7 +175,7 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
                       const value = parseInt(e.target.value);
                       if (value >= priceMin) setPriceMax(value);
                     }}
-                    className="absolute w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer z-10 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:border-0"
+                    className="absolute w-full h-2 bg-transparent rounded-lg appearance-none pointer-events-none z-10 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:border-0"
                   />
                   <input
                     type="range"
@@ -183,7 +187,7 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
                       const value = parseInt(e.target.value);
                       if (value <= priceMax) setPriceMin(value);
                     }}
-                    className="absolute w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:border-0"
+                    className="absolute w-full h-2 bg-transparent rounded-lg appearance-none pointer-events-none z-20 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:border-0"
                   />
                 </div>
               </div>
@@ -323,7 +327,7 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
                   <span className="text-sm text-gray-700 dark:text-gray-300">{ratingMax.toFixed(1)} ⭐</span>
                 </div>
                 <div className="relative h-8 pt-2">
-                  <div className="absolute w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                  <div className="absolute w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg pointer-events-none" />
                   <input
                     type="range"
                     min="0"
@@ -334,7 +338,7 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
                       const value = parseFloat(e.target.value);
                       if (value >= ratingMin) setRatingMax(value);
                     }}
-                    className="absolute w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer z-10 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:border-0"
+                    className="absolute w-full h-2 bg-transparent rounded-lg appearance-none pointer-events-none z-10 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:border-0"
                   />
                   <input
                     type="range"
@@ -346,7 +350,7 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
                       const value = parseFloat(e.target.value);
                       if (value <= ratingMax) setRatingMin(value);
                     }}
-                    className="absolute w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer z-20 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:border-0"
+                    className="absolute w-full h-2 bg-transparent rounded-lg appearance-none pointer-events-none z-20 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-indigo-600 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-indigo-600 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:border-0"
                   />
                 </div>
               </div>
