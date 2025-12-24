@@ -34,6 +34,7 @@ interface UserPreferences {
   bathrooms?: number[];
   ratingMin?: number;
   ratingMax?: number;
+  requiredAmenities?: string[]; // Hard filter - listings must have these
   weights?: ScoringWeights; // Custom scoring weights (defaults to 40/35/15/10)
   learned?: LearnedPreferences; // Learned preferences from swipe behavior
 }

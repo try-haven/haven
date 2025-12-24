@@ -304,6 +304,19 @@ export default function SwipePage() {
       });
     }
 
+    // Hard filter by required amenities - listings MUST have ALL required amenities
+    if (userPreferences.requiredAmenities && userPreferences.requiredAmenities.length > 0) {
+      filteredListings = filteredListings.filter(listing => {
+        // Check if listing has all required amenities
+        return userPreferences.requiredAmenities!.every(requiredAmenity =>
+          listing.amenities.some(listingAmenity =>
+            listingAmenity.toLowerCase().includes(requiredAmenity.toLowerCase()) ||
+            requiredAmenity.toLowerCase().includes(listingAmenity.toLowerCase())
+          )
+        );
+      });
+    }
+
     // Cap at 500 listings max to keep scoring fast
     if (filteredListings.length > 500) {
       filteredListings = filteredListings.slice(0, 500);

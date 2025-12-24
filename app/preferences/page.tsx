@@ -64,6 +64,7 @@ function PreferencesContent() {
     bathrooms: user?.preferences?.bathrooms,
     ratingMin: user?.preferences?.ratingMin,
     ratingMax: user?.preferences?.ratingMax,
+    requiredAmenities: user?.preferences?.requiredAmenities,
     weights: user?.preferences?.weights,
   };
 
@@ -107,6 +108,7 @@ function PreferencesContent() {
             bathrooms: apartmentPrefs.bathrooms,
             ratingMin: apartmentPrefs.ratingMin,
             ratingMax: apartmentPrefs.ratingMax,
+            requiredAmenities: apartmentPrefs.requiredAmenities,
             weights: apartmentPrefs.weights,
           });
           router.push("/swipe");

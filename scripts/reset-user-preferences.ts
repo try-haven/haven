@@ -55,6 +55,8 @@ async function resetUserPreferences() {
         // Rating range
         rating_min: null,
         rating_max: null,
+        // Required amenities (hard filter)
+        required_amenities: null,
         // Scoring weights (reset to defaults)
         weight_distance: 40,
         weight_amenities: 35,

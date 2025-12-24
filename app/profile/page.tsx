@@ -35,6 +35,7 @@ export default function ProfilePage() {
         bathrooms: undefined,
         ratingMin: undefined,
         ratingMax: undefined,
+        requiredAmenities: undefined,
         weights: {
           distance: 40,
           amenities: 35,

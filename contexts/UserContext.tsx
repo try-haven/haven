@@ -35,6 +35,7 @@ interface UserPreferences {
   bathrooms?: number[];
   ratingMin?: number;
   ratingMax?: number;
+  requiredAmenities?: string[]; // Hard filter - listings must have these
   // Scoring weights (customizable - defaults to 40/35/15/10)
   weights?: ScoringWeights;
   // Learned preferences (automatically calculated from swipe behavior)
@@ -242,6 +243,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             bathrooms: profile.bathrooms,
             ratingMin: profile.rating_min,
             ratingMax: profile.rating_max,
+            requiredAmenities: profile.required_amenities,
             weights: {
               distance: profile.weight_distance ?? 40,
               amenities: profile.weight_amenities ?? 35,
@@ -540,6 +542,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         bathrooms: preferences.bathrooms,
         rating_min: preferences.ratingMin,
         rating_max: preferences.ratingMax,
+        required_amenities: preferences.requiredAmenities,
         weight_distance: preferences.weights?.distance,
         weight_amenities: preferences.weights?.amenities,
         weight_quality: preferences.weights?.quality,
@@ -590,6 +593,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           bathrooms: profile.bathrooms,
           ratingMin: profile.rating_min,
           ratingMax: profile.rating_max,
+          requiredAmenities: profile.required_amenities,
           weights: {
             distance: profile.weight_distance ?? 40,
             amenities: profile.weight_amenities ?? 35,

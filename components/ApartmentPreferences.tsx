@@ -18,6 +18,7 @@ interface ApartmentPreferencesData {
   bathrooms?: number[];
   ratingMin?: number;
   ratingMax?: number;
+  requiredAmenities?: string[];
   weights?: ScoringWeights;
 }
 
@@ -35,6 +36,7 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
   const [selectedBathrooms, setSelectedBathrooms] = useState<number[]>(initialPreferences?.bathrooms || []);
   const [ratingMin, setRatingMin] = useState<number>(initialPreferences?.ratingMin || 0);
   const [ratingMax, setRatingMax] = useState<number>(initialPreferences?.ratingMax || 5);
+  const [requiredAmenities, setRequiredAmenities] = useState<string[]>(initialPreferences?.requiredAmenities || []);
 
   // State for "no preference" toggles - default to false so users see the controls
   const [noPricePreference, setNoPricePreference] = useState(false);
@@ -98,6 +100,11 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
       }
       preferences.ratingMin = ratingMin;
       preferences.ratingMax = ratingMax;
+    }
+
+    // Add required amenities (hard filter)
+    if (requiredAmenities.length > 0) {
+      preferences.requiredAmenities = requiredAmenities;
     }
 
     // Validate and add scoring weights (always save, even if using defaults)
@@ -355,6 +362,51 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Required Amenities */}
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
+            <div className="mb-3">
+              <label className="text-sm font-medium text-gray-900 dark:text-white">
+                Required Amenities
+              </label>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Select amenities that listings MUST have. We'll also learn your preferences from your swipes.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                "Parking",
+                "In-unit laundry",
+                "Dishwasher",
+                "AC",
+                "Gym",
+                "Pool",
+                "Pet-friendly",
+                "Balcony",
+                "Near transit",
+                "Rooftop access",
+              ].map((amenity) => (
+                <button
+                  key={amenity}
+                  type="button"
+                  onClick={() => {
+                    setRequiredAmenities(prev =>
+                      prev.includes(amenity)
+                        ? prev.filter(a => a !== amenity)
+                        : [...prev, amenity]
+                    );
+                  }}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+                    requiredAmenities.includes(amenity)
+                      ? "bg-indigo-600 text-white"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  }`}
+                >
+                  {amenity}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Scoring Weights */}
