@@ -507,12 +507,13 @@ export function applyHardFilters(
 
     // View filter (NYC listings only)
     if (userPreferences.requiredView && userPreferences.requiredView.length > 0 && 'amenities' in listing && !Array.isArray(listing.amenities)) {
-      if (!listing.amenities.view) {
+      const listingView = listing.amenities.view;
+      if (!listingView) {
         return false; // No view at all
       }
       // Check if the listing's view matches any of the required views
       const hasRequiredView = userPreferences.requiredView.some(requiredView =>
-        listing.amenities.view?.toLowerCase().includes(requiredView.toLowerCase())
+        listingView.toLowerCase().includes(requiredView.toLowerCase())
       );
       if (!hasRequiredView) {
         return false;
