@@ -598,7 +598,7 @@ export default function SwipeableCard({
                   {listing.neighborhood}
                 </span>
               )}
-              {'amenities' in listing && listing.amenities.view && (
+              {'amenities' in listing && !Array.isArray(listing.amenities) && listing.amenities.view && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-medium">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -607,7 +607,7 @@ export default function SwipeableCard({
                   {listing.amenities.view} View
                 </span>
               )}
-              {'amenities' in listing && listing.amenities.pets && (
+              {'amenities' in listing && !Array.isArray(listing.amenities) && listing.amenities.pets && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-xs font-medium">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
