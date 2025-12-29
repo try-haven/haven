@@ -506,7 +506,7 @@ export function applyHardFilters(
     }
 
     // View filter (NYC listings only)
-    if (userPreferences.requiredView && userPreferences.requiredView.length > 0 && 'amenities' in listing) {
+    if (userPreferences.requiredView && userPreferences.requiredView.length > 0 && 'amenities' in listing && !Array.isArray(listing.amenities)) {
       if (!listing.amenities.view) {
         return false; // No view at all
       }
