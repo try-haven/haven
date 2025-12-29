@@ -13,6 +13,7 @@ interface LearnedPreferences {
   preferredLocations?: string[]; // City/neighborhood keywords
   avgImageCount?: number;
   avgDescriptionLength?: number;
+  avgSqft?: number;
   updatedAt?: string;
 }
 
