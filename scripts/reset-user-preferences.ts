@@ -58,10 +58,11 @@ async function resetUserPreferences() {
         // Required amenities (hard filter)
         required_amenities: null,
         // Scoring weights (reset to defaults)
-        weight_distance: 40,
-        weight_amenities: 35,
+        weight_distance: 30,
+        weight_amenities: 30,
+        weight_property_features: 20,
         weight_quality: 15,
-        weight_rating: 10,
+        weight_rating: 5,
         // Learned personalization (automatically calculated from swipes)
         learned_preferred_amenities: {},
         learned_avg_image_count: null,
@@ -75,7 +76,7 @@ async function resetUserPreferences() {
     console.log('✓ Reset location preferences (address, coordinates, commute)');
     console.log('✓ Reset rating preferences');
     console.log('✓ Reset apartment preferences (price, bedrooms, bathrooms, sqft)');
-    console.log('✓ Reset scoring weights to defaults (distance: 40%, amenities: 35%, quality: 15%, rating: 10%)');
+    console.log('✓ Reset scoring weights to defaults (distance: 30%, amenities: 30%, property features: 20%, quality: 15%, rating: 5%)');
     console.log('✓ Reset learned personalization (amenities, quality signals)');
 
     // Delete swipe history (reviewed listings)

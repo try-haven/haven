@@ -119,10 +119,11 @@ export default function ProfilePage() {
         ratingMax: undefined,
         requiredAmenities: undefined,
         weights: {
-          distance: 40,
-          amenities: 35,
+          distance: 30,
+          amenities: 30,
+          propertyFeatures: 20,
           quality: 15,
-          rating: 10,
+          rating: 5,
         },
       });
 
