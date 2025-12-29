@@ -67,6 +67,7 @@ async function resetUserPreferences() {
         learned_preferred_amenities: {},
         learned_avg_image_count: null,
         learned_avg_description_length: null,
+        learned_avg_sqft_by_bedrooms: null,
         learned_preferences_updated_at: null,
       })
       .eq('id', user.id);

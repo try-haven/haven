@@ -15,7 +15,7 @@ interface LearnedPreferences {
   preferredAmenities?: Record<string, number>; // Amenity -> weight (stored as Record for database)
   avgImageCount?: number; // Average number of images in liked listings
   avgDescriptionLength?: number; // Average description length in liked listings
-  avgSqft?: number; // Median sqft from liked listings
+  avgSqftByBedrooms?: Record<number, number>; // Bedroom count -> median sqft (normalized by bedroom count)
   updatedAt?: string; // ISO timestamp of last update
   mlModel?: ModelWeights; // ML model weights for personalized predictions
 }
@@ -25,7 +25,7 @@ interface LearnedPreferencesInternal {
   preferredAmenities?: Map<string, number>; // Amenity -> frequency in liked listings (internal use)
   avgImageCount?: number; // Average number of images in liked listings
   avgDescriptionLength?: number; // Average description length in liked listings
-  avgSqft?: number; // Median sqft from liked listings
+  avgSqftByBedrooms?: Map<number, number>; // Bedroom count -> median sqft (normalized by bedroom count)
 }
 
 interface UserPreferences {
@@ -217,17 +217,33 @@ function learnFromSwipeHistory(
   const avgImageCount = imageCounts.length > 0 ? median(imageCounts) : undefined;
   const avgDescriptionLength = descriptionLengths.length > 0 ? Math.round(median(descriptionLengths)) : undefined;
 
-  // Learn sqft preference from liked listings
+  // Learn sqft preference from liked listings - grouped by bedroom count
   const nycLikedListings = likedListings.filter((l): l is NYCApartmentListing => 'sqft' in l);
-  const sqfts = nycLikedListings.map((l) => l.sqft);
-  const avgSqft = sqfts.length > 0 ? Math.round(median(sqfts)) : undefined;
+  const avgSqftByBedrooms = new Map<number, number>();
+
+  // Group sqfts by bedroom count
+  const sqftsByBedrooms = new Map<number, number[]>();
+  nycLikedListings.forEach((listing) => {
+    const bedrooms = listing.bedrooms;
+    if (!sqftsByBedrooms.has(bedrooms)) {
+      sqftsByBedrooms.set(bedrooms, []);
+    }
+    sqftsByBedrooms.get(bedrooms)!.push(listing.sqft);
+  });
+
+  // Calculate median sqft for each bedroom count
+  sqftsByBedrooms.forEach((sqfts, bedrooms) => {
+    if (sqfts.length > 0) {
+      avgSqftByBedrooms.set(bedrooms, Math.round(median(sqfts)));
+    }
+  });
 
   // Return learned preferences
   return {
     preferredAmenities: amenityFrequency,
     avgImageCount,
     avgDescriptionLength,
-    avgSqft,
+    avgSqftByBedrooms: avgSqftByBedrooms.size > 0 ? avgSqftByBedrooms : undefined,
   };
 }
 
@@ -412,11 +428,14 @@ function calculateMatchScore(
   if ('sqft' in listing && 'yearBuilt' in listing) {
     const nycListing = listing as NYCApartmentListing;
 
-    // Sqft scoring - use learned preference if available
+    // Sqft scoring - use bedroom-specific learned preference if available
     let sqftScore: number;
-    if (learnedPreferences.avgSqft && learnedPreferences.avgSqft > 0) {
-      const sqftDiff = Math.abs(nycListing.sqft - learnedPreferences.avgSqft);
-      sqftScore = Math.max(0, 1 - sqftDiff / learnedPreferences.avgSqft);
+    const bedroomCount = nycListing.bedrooms;
+    const learnedSqft = learnedPreferences.avgSqftByBedrooms?.get(bedroomCount);
+
+    if (learnedSqft && learnedSqft > 0) {
+      const sqftDiff = Math.abs(nycListing.sqft - learnedSqft);
+      sqftScore = Math.max(0, 1 - sqftDiff / learnedSqft);
     } else {
       sqftScore = scoreSqft(nycListing.sqft);
     }
@@ -492,11 +511,13 @@ function calculateMatchScore(
  */
 function convertStoredLearnedPreferences(stored: any): LearnedPreferencesInternal {
   const amenitiesRecord = stored.preferredAmenities as Record<string, number> | undefined;
+  const sqftByBedroomsRecord = stored.avgSqftByBedrooms as Record<string, number> | undefined;
 
   return {
     preferredAmenities: amenitiesRecord ? new Map(Object.entries(amenitiesRecord)) : undefined,
     avgImageCount: stored.avgImageCount,
     avgDescriptionLength: stored.avgDescriptionLength,
+    avgSqftByBedrooms: sqftByBedroomsRecord ? new Map(Object.entries(sqftByBedroomsRecord).map(([k, v]) => [parseInt(k), v])) : undefined,
   };
 }
 
@@ -537,6 +558,9 @@ export function calculateLearnedPreferences(
     ...learned,
     preferredAmenities: learned.preferredAmenities
       ? Object.fromEntries(learned.preferredAmenities) as any
+      : undefined,
+    avgSqftByBedrooms: learned.avgSqftByBedrooms
+      ? Object.fromEntries(learned.avgSqftByBedrooms) as any
       : undefined,
   };
 }
