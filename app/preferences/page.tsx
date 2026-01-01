@@ -12,7 +12,7 @@ type CommuteOption = "car" | "public-transit" | "walk" | "bike";
 function PreferencesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, updatePreferences, isLoggedIn, isManager } = useUser();
+  const { user, updatePreferences, isLoggedIn, isManager, loading } = useUser();
   const [step, setStep] = useState<"address" | "commute" | "apartment">("address");
   const [userAddress, setUserAddress] = useState<string>("");
   const [userCommute, setUserCommute] = useState<CommuteOption[]>([]);
@@ -38,6 +38,9 @@ function PreferencesContent() {
   }, [searchParams, user]);
 
   useEffect(() => {
+    // Wait for loading to complete before redirecting to avoid race conditions
+    if (loading) return;
+
     // Redirect to home if not logged in
     if (!isLoggedIn) {
       router.push("/");
@@ -46,7 +49,16 @@ function PreferencesContent() {
     if (isManager) {
       router.push("/manager/dashboard");
     }
-  }, [isLoggedIn, isManager, router]);
+  }, [loading, isLoggedIn, isManager, router]);
+
+  // Show loading screen while auth is being checked
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <div className="text-gray-500 dark:text-gray-400">Loading...</div>
+      </div>
+    );
+  }
 
   // Don't render if not logged in or if user is a manager
   if (!isLoggedIn || isManager) {
