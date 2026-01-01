@@ -76,7 +76,7 @@ function convertNYCAmenitiesToArray(amenities: NYCAmenities): string[] {
   if (amenities.washerDryerInBuilding) result.push("Washer/Dryer in building", "Laundry facilities");
   if (amenities.dishwasher) result.push("Dishwasher");
   if (amenities.ac) result.push("AC", "Air conditioning");
-  // Don't include pets here - it's shown as a badge above
+  if (amenities.pets) result.push("Pet-friendly", "Pets");
   if (amenities.fireplace) result.push("Fireplace");
   if (amenities.gym) result.push("Gym", "Fitness center");
   if (amenities.parking) result.push("Parking");
