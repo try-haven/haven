@@ -355,7 +355,7 @@ export default function SwipeableCard({
             {/* Match Score Badge */}
             {matchScore !== undefined && (
               <div
-                className="absolute top-4 left-4 z-20 group cursor-pointer"
+                className={`absolute top-4 ${isMobile ? 'right-4' : 'left-4'} z-20 group cursor-pointer`}
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowScoreBreakdown(!showScoreBreakdown);
