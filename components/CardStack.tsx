@@ -28,6 +28,15 @@ interface CardStackProps {
 
 export default function CardStack({ listings, onLikedChange, initialLikedIds = new Set(), onViewLiked, initialCompleted = false, onCompletedChange, showMatchScores = false, onSwipeCountUpdate, onStartOver }: CardStackProps) {
   const { user } = useUser();
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile for positioning progress indicator
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Load saved position from localStorage on mount
   const getSavedPosition = () => {
@@ -743,8 +752,8 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
         </svg>
       </button>
 
-      {/* Progress Indicator */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+      {/* Progress Indicator - right-aligned on mobile to avoid overlap with match score badge */}
+      <div className={`absolute top-4 z-10 flex gap-2 ${isMobile ? 'right-4' : 'left-1/2 -translate-x-1/2'}`}>
         <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg text-sm font-medium text-gray-700 dark:text-gray-200">
           {items[currentIndex]?.type === "ad" ? getListingIndex(currentIndex) : getListingIndex(currentIndex) + 1} / {listings.length}
         </div>

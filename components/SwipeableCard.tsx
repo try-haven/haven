@@ -355,7 +355,7 @@ export default function SwipeableCard({
             {/* Match Score Badge */}
             {matchScore !== undefined && (
               <div
-                className={`absolute top-4 ${isMobile ? 'right-4' : 'left-4'} z-20 group cursor-pointer`}
+                className="absolute top-4 left-4 z-20 group cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowScoreBreakdown(!showScoreBreakdown);
@@ -394,9 +394,9 @@ export default function SwipeableCard({
                   </div>
                 )}
 
-                {/* Score Breakdown Tooltip - opens left on mobile, right on desktop */}
+                {/* Score Breakdown Tooltip */}
                 {scoreBreakdown && (
-                  <div className={`${showScoreBreakdown ? 'visible' : 'invisible group-hover:visible'} absolute top-full ${isMobile ? 'right-0' : 'left-0'} mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 z-10`}>
+                  <div className={`${showScoreBreakdown ? 'visible' : 'invisible group-hover:visible'} absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 z-10`}>
                     <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Score Breakdown:</div>
                     <div className="space-y-1.5">
                       {scoreBreakdown.distance && (
