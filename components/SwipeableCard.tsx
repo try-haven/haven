@@ -68,6 +68,9 @@ export default function SwipeableCard({
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+  const [isSwipingImage, setIsSwipingImage] = useState(false);
+  const touchStartX = useRef<number>(0);
 
   // Detect mobile for tooltip positioning
   useEffect(() => {
@@ -288,7 +291,7 @@ export default function SwipeableCard({
         zIndex: total - index,
         pointerEvents: index === 0 ? "auto" : "none",
       }}
-      drag="x"
+      drag={index === 0 && !isSwipingImage ? "x" : false}
       dragConstraints={{ left: 0, right: 0 }}
       dragElastic={0.3}
       dragDirectionLock
@@ -318,7 +321,61 @@ export default function SwipeableCard({
           className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl h-full max-h-[72vh] md:max-h-[90vh] lg:max-h-[93vh] flex flex-col md:flex-row overflow-hidden"
         >
           {/* Image Carousel - Left 2/3 */}
-          <div className="relative h-40 md:h-full md:w-2/3 bg-gray-200 dark:bg-gray-700 flex-shrink-0">
+          <div
+            ref={imageContainerRef}
+            className="relative h-40 md:h-full md:w-2/3 bg-gray-200 dark:bg-gray-700 flex-shrink-0"
+            onPointerDown={(e) => {
+              // On mobile, allow image swiping without triggering card swipe
+              if (isMobile && listing.images.length > 1) {
+                setIsSwipingImage(true);
+              }
+            }}
+            onPointerMove={(e) => {
+              if (isSwipingImage && e.movementX !== 0) {
+                e.stopPropagation();
+              }
+            }}
+            onPointerUp={(e) => {
+              if (isSwipingImage) {
+                e.stopPropagation();
+                setIsSwipingImage(false);
+              }
+            }}
+            onTouchStart={(e) => {
+              // On mobile, allow image swiping
+              if (isMobile && listing.images.length > 1) {
+                touchStartX.current = e.touches[0].clientX;
+                setIsSwipingImage(true);
+              }
+            }}
+            onTouchMove={(e) => {
+              if (isSwipingImage) {
+                e.stopPropagation();
+              }
+            }}
+            onTouchEnd={(e) => {
+              if (isSwipingImage) {
+                e.stopPropagation();
+
+                // Detect swipe direction from touch
+                const touch = e.changedTouches[0];
+                const deltaX = touch.clientX - touchStartX.current;
+
+                // Swipe threshold
+                if (Math.abs(deltaX) > 50) {
+                  if (deltaX > 0) {
+                    // Swiped right - previous image
+                    prevImage();
+                  } else {
+                    // Swiped left - next image
+                    nextImage();
+                  }
+                }
+
+                setIsSwipingImage(false);
+              }
+            }}
+          >
             {!imageError && listing.images[imageIndex] ? (
               <Image
                 src={listing.images[imageIndex]}
