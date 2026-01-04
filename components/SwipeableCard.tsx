@@ -67,6 +67,15 @@ export default function SwipeableCard({
   } | null>(null);
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile for tooltip positioning
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Calculate distance if user has location set
   const distance = user?.preferences?.latitude && user?.preferences?.longitude && listing.latitude && listing.longitude
@@ -385,9 +394,9 @@ export default function SwipeableCard({
                   </div>
                 )}
 
-                {/* Score Breakdown Tooltip */}
+                {/* Score Breakdown Tooltip - opens left on mobile, right on desktop */}
                 {scoreBreakdown && (
-                  <div className={`${showScoreBreakdown ? 'visible' : 'invisible group-hover:visible'} absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 z-10`}>
+                  <div className={`${showScoreBreakdown ? 'visible' : 'invisible group-hover:visible'} absolute top-full ${isMobile ? 'right-0' : 'left-0'} mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 z-10`}>
                     <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Score Breakdown:</div>
                     <div className="space-y-1.5">
                       {scoreBreakdown.distance && (
