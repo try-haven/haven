@@ -244,6 +244,38 @@ function randFloat(min: number, max: number, seed: number): number {
   return seededRand(seed) * (max - min) + min;
 }
 
+// ─── Promotion generator ─────────────────────────────────────────────────────
+
+const LEASE_TERMS = [6, 9, 12, 12, 12, 15, 18] as const; // weighted toward 12
+const RATE_DISCOUNTS = [5, 8, 10, 10, 12, 15];           // % off values
+
+function generatePromotions(seed: number): Array<{ leaseTermMonths: number; type: 'months_free' | 'reduced_rate'; value: number }> {
+  // ~45% of listings get at least one promo
+  if (seededRand(seed) > 0.45) return [];
+
+  const promos: Array<{ leaseTermMonths: number; type: 'months_free' | 'reduced_rate'; value: number }> = [];
+
+  const primaryTerm = pick([...LEASE_TERMS], seed + 1);
+  const primaryType = seededRand(seed + 2) < 0.6 ? 'months_free' : 'reduced_rate';
+  const primaryValue = primaryType === 'months_free'
+    ? (seededRand(seed + 3) < 0.75 ? 1 : 2)
+    : pick(RATE_DISCOUNTS, seed + 4);
+  promos.push({ leaseTermMonths: primaryTerm, type: primaryType, value: primaryValue });
+
+  // ~35% chance of a second promo on a different lease term
+  if (seededRand(seed + 5) < 0.35) {
+    const remainingTerms = [6, 9, 12, 15, 18].filter(t => t !== primaryTerm);
+    const secondTerm = pick(remainingTerms, seed + 6);
+    const secondType = seededRand(seed + 7) < 0.6 ? 'months_free' : 'reduced_rate';
+    const secondValue = secondType === 'months_free'
+      ? (seededRand(seed + 8) < 0.75 ? 1 : 2)
+      : pick(RATE_DISCOUNTS, seed + 9);
+    promos.push({ leaseTermMonths: secondTerm, type: secondType, value: secondValue });
+  }
+
+  return promos;
+}
+
 // ─── Listing generator ────────────────────────────────────────────────────────
 
 function generateListing(unitId: number, nbhd: Neighborhood, managerId: string) {
@@ -345,6 +377,7 @@ function generateListing(unitId: number, nbhd: Neighborhood, managerId: string) 
     average_rating: null,
     total_ratings: 0,
     price_history: [],
+    promotions: generatePromotions(s + 100),
   };
 }
 
@@ -409,7 +442,8 @@ async function seedNYCListings() {
     console.log(`  Inserted ${inserted}/${allListings.length}...`);
   }
 
-  console.log(`\nDone! Inserted ${inserted} NYC listings.`);
+  const withPromos = allListings.filter((l: any) => l.promotions.length > 0).length;
+  console.log(`\nDone! Inserted ${inserted} NYC listings (${withPromos} with promotions).`);
   console.log('\nNeighborhood breakdown:');
   neighborhoods.forEach(n => console.log(`  ${n.name}: ${n.count} listings`));
 }
