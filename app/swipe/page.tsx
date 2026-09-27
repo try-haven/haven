@@ -246,7 +246,8 @@ export default function SwipePage() {
     }
   };
 
-  // Fetch commute times for top 50 closest listings whenever the user's location or mode changes
+  // Fetch commute times for all listings whenever the user's location or mode changes.
+  // Uses 5 parallel workers so ~400 listings complete in ~5-10s on first load; cached after.
   useEffect(() => {
     const lat = user?.preferences?.latitude;
     const lng = user?.preferences?.longitude;
@@ -254,31 +255,35 @@ export default function SwipePage() {
 
     const mode = (user?.preferences?.commute as string[] | undefined)?.[0] || "car";
 
-    // Sort by Manhattan distance to user to fetch most relevant listings first
+    // Sort closest-first so nearby (most relevant) listings get data earliest
     const candidates = [...listings]
       .filter((l: any) => l.latitude && l.longitude)
       .sort((a: any, b: any) => {
         const dA = Math.abs(a.latitude - lat) + Math.abs(a.longitude - lng);
         const dB = Math.abs(b.latitude - lat) + Math.abs(b.longitude - lng);
         return dA - dB;
-      })
-      .slice(0, 50);
+      });
 
     let cancelled = false;
-    (async () => {
-      for (const listing of candidates) {
-        if (cancelled) break;
-        const mins = await fetchCommuteMinutes(mode, lat, lng, (listing as any).latitude, (listing as any).longitude);
+    const queue = [...candidates];
+
+    const worker = async () => {
+      while (queue.length > 0 && !cancelled) {
+        const listing = queue.shift();
+        if (!listing) break;
+        const mins = await fetchCommuteMinutes(
+          mode, lat, lng,
+          (listing as any).latitude,
+          (listing as any).longitude
+        );
         if (mins !== null && !cancelled) {
-          setCommuteMinutes(prev => {
-            const next = new Map(prev);
-            next.set(listing.id, mins);
-            return next;
-          });
+          setCommuteMinutes(prev => new Map(prev).set(listing.id, mins));
         }
-        if (!cancelled) await new Promise(r => setTimeout(r, 100));
       }
-    })();
+    };
+
+    // 5 concurrent workers — polite to OSRM, fast enough for ~400 listings
+    Promise.all(Array.from({ length: 5 }, worker));
 
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
