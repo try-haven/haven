@@ -1,6 +1,9 @@
 import { supabase } from './supabase';
 import { geocodeAddress } from './geocoding';
-import { NYCApartmentListing } from './data';
+import { NYCApartmentListing, Promotion } from './data';
+
+// Re-export Promotion so manager pages can import from one place
+export type { Promotion };
 
 // Types
 export interface Listing {
@@ -25,11 +28,13 @@ export interface Listing {
   updated_at?: string;
 }
 
-// Price change entry in price_history
+// Price change / promotion event entry in price_history
 export interface PriceChange {
   timestamp: string; // ISO date string
   old_price: number;
   new_price: number;
+  type?: 'price_change' | 'promo_added' | 'promo_removed';
+  description?: string;
 }
 
 // Database schema for listings_nyc table (snake_case with unusual column names)
@@ -70,6 +75,7 @@ export interface ListingNYC {
   created_at?: string;
   updated_at?: string;
   price_history?: PriceChange[]; // Array of price changes over time
+  promotions?: Promotion[];      // Active promotions
 }
 
 // Helper: Convert "0"/"1" strings to boolean
@@ -126,6 +132,7 @@ function convertNYCListing(dbListing: ListingNYC): NYCApartmentListing {
     averageRating: dbListing.average_rating,
     totalRatings: dbListing.total_ratings,
     priceHistory: dbListing.price_history || [], // Price changes over time
+    promotions: dbListing.promotions || [],       // Active promotions
   };
 }
 
@@ -431,6 +438,7 @@ export async function createListing(
     renovationYear?: number | null;
     outdoorArea?: string;
     view?: string;
+    promotions?: Promotion[];
   }
 ): Promise<Listing | null> {
   try {
@@ -509,6 +517,7 @@ export async function createListing(
         longitude: coords?.longitude || null,
         average_rating: null,
         total_ratings: 0,
+        promotions: listing.promotions || [],
       };
 
       await supabase
@@ -553,6 +562,13 @@ export async function updateListing(id: string, updates: Partial<Listing>): Prom
   }
 }
 
+function promoDescription(promo: { type: 'months_free' | 'reduced_rate'; value: number }): string {
+  if (promo.type === 'months_free') {
+    return promo.value === 1 ? '1 month free' : `${promo.value} months free`;
+  }
+  return `${promo.value}% off`;
+}
+
 export async function updateListingNYC(
   unitId: string,
   updates: {
@@ -578,41 +594,85 @@ export async function updateListingNYC(
     pool?: boolean;
     outdoorArea?: string;
     view?: string;
+    promotions?: Promotion[];
   }
 ): Promise<boolean> {
   try {
     console.log('[updateListingNYC] Updating listing:', unitId);
 
-    // If price is changing, fetch current listing to track price history
-    if (updates.price !== undefined) {
+    // If price or promotions are changing, fetch current state for event tracking
+    if (updates.price !== undefined || updates.promotions !== undefined) {
       const { data: currentListing, error: fetchError } = await supabase
         .from('listings_nyc')
-        .select('Price, price_history')
+        .select('Price, price_history, promotions')
         .eq('Unit ID', parseInt(unitId, 10))
         .single();
 
       if (fetchError) {
         console.error('[updateListingNYC] Error fetching current listing:', fetchError);
-      } else if (currentListing && currentListing['Price'] !== updates.price) {
-        // Price is changing - add to history
-        const currentHistory: PriceChange[] = currentListing.price_history || [];
-        const newChange: PriceChange = {
-          timestamp: new Date().toISOString(),
-          old_price: currentListing['Price'],
-          new_price: updates.price,
-        };
+      } else if (currentListing) {
+        const history: PriceChange[] = currentListing.price_history || [];
+        let historyChanged = false;
 
-        // Append to price history
-        const updatedHistory = [...currentHistory, newChange];
+        // Track price change
+        if (updates.price !== undefined && currentListing['Price'] !== updates.price) {
+          history.push({
+            timestamp: new Date().toISOString(),
+            old_price: currentListing['Price'],
+            new_price: updates.price,
+            type: 'price_change',
+          });
+          historyChanged = true;
+        }
 
-        // Update price_history in the updateData
-        const { error: historyError } = await supabase
-          .from('listings_nyc')
-          .update({ price_history: updatedHistory })
-          .eq('Unit ID', parseInt(unitId, 10));
+        // Track promotion changes
+        if (updates.promotions !== undefined) {
+          const oldPromos: Promotion[] = currentListing.promotions || [];
+          const newPromos: Promotion[] = updates.promotions;
 
-        if (historyError) {
-          console.error('[updateListingNYC] Error updating price history:', historyError);
+          const addedPromos = newPromos.filter(np =>
+            !oldPromos.some(op =>
+              op.leaseTermMonths === np.leaseTermMonths && op.type === np.type && op.value === np.value
+            )
+          );
+          const removedPromos = oldPromos.filter(op =>
+            !newPromos.some(np =>
+              op.leaseTermMonths === np.leaseTermMonths && op.type === np.type && op.value === np.value
+            )
+          );
+
+          for (const promo of addedPromos) {
+            history.push({
+              timestamp: new Date().toISOString(),
+              old_price: currentListing['Price'],
+              new_price: currentListing['Price'],
+              type: 'promo_added',
+              description: `Added ${promoDescription(promo)} on ${promo.leaseTermMonths}-mo lease`,
+            });
+            historyChanged = true;
+          }
+
+          for (const promo of removedPromos) {
+            history.push({
+              timestamp: new Date().toISOString(),
+              old_price: currentListing['Price'],
+              new_price: currentListing['Price'],
+              type: 'promo_removed',
+              description: `Removed ${promoDescription(promo)} on ${promo.leaseTermMonths}-mo lease`,
+            });
+            historyChanged = true;
+          }
+        }
+
+        if (historyChanged) {
+          const { error: historyError } = await supabase
+            .from('listings_nyc')
+            .update({ price_history: history })
+            .eq('Unit ID', parseInt(unitId, 10));
+
+          if (historyError) {
+            console.error('[updateListingNYC] Error updating price history:', historyError);
+          }
         }
       }
     }
@@ -644,6 +704,7 @@ export async function updateListingNYC(
     if (updates.pool !== undefined) updateData['Pool'] = updates.pool ? 1 : 0;
     if (updates.outdoorArea !== undefined) updateData['Outdoor Area'] = updates.outdoorArea;
     if (updates.view !== undefined) updateData['View'] = updates.view;
+    if (updates.promotions !== undefined) updateData['promotions'] = updates.promotions;
 
     // Geocode if address changed
     if (updates.address) {

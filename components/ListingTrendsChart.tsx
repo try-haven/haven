@@ -23,14 +23,14 @@ export default function ListingTrendsChart({ listingId }: ListingTrendsChartProp
 
   const chartData = useMemo(() => {
     if (allListings.length === 0) {
-      return { data: [], priceChanges: [], currentPrice: 0 };
+      return { data: [], priceChanges: [], promoEvents: [], currentPrice: 0 };
     }
 
     // Load the listing to get initial price
     const listing = allListings.find(l => l.id === listingId) || null;
 
     if (!listing) {
-      return { data: [], priceChanges: [], currentPrice: 0 };
+      return { data: [], priceChanges: [], promoEvents: [], currentPrice: 0 };
     }
 
     const currentPrice = listing.price;
@@ -72,7 +72,7 @@ export default function ListingTrendsChart({ listingId }: ListingTrendsChartProp
     });
 
     if (listingEvents.length === 0) {
-      return { data: [], priceChanges: [], currentPrice };
+      return { data: [], priceChanges: [], promoEvents: [], currentPrice };
     }
 
     // Get earliest and latest timestamps
@@ -186,14 +186,25 @@ export default function ListingTrendsChart({ listingId }: ListingTrendsChartProp
         };
       });
 
-    // Get price changes from listing (all-time history)
+    // Get price changes and promo events from listing history
     const nycListing = listing as NYCApartmentListing;
-    const priceHistory = nycListing.priceHistory || [];
-    const priceChanges = priceHistory
+    const allHistory = nycListing.priceHistory || [];
+
+    const priceChanges = allHistory
+      .filter(c => (!c.type || c.type === 'price_change') && c.old_price !== c.new_price)
       .map(c => ({
         timestamp: new Date(c.timestamp).getTime(),
         oldValue: c.old_price,
         newValue: c.new_price,
+      }))
+      .sort((a, b) => a.timestamp - b.timestamp);
+
+    const promoEvents = allHistory
+      .filter(c => c.type === 'promo_added' || c.type === 'promo_removed')
+      .map(c => ({
+        timestamp: new Date(c.timestamp).getTime(),
+        type: c.type as 'promo_added' | 'promo_removed',
+        description: c.description || (c.type === 'promo_added' ? 'Promo added' : 'Promo removed'),
       }))
       .sort((a, b) => a.timestamp - b.timestamp);
 
@@ -220,10 +231,10 @@ export default function ListingTrendsChart({ listingId }: ListingTrendsChartProp
       };
     });
 
-    return { data: dataWithPrice, priceChanges, currentPrice };
+    return { data: dataWithPrice, priceChanges, promoEvents, currentPrice };
   }, [listingId, allListings]);
 
-  const { data, priceChanges, currentPrice } = chartData;
+  const { data, priceChanges, promoEvents, currentPrice } = chartData;
 
   if (isLoading) {
     return (
@@ -337,12 +348,11 @@ export default function ListingTrendsChart({ listingId }: ListingTrendsChartProp
             connectNulls
           />
           {priceChanges.map((change, index) => {
-            // Find the data point closest to this change
             const dataPoint = data.find(d => d.timestamp >= change.timestamp);
             if (dataPoint) {
               return (
                 <ReferenceLine
-                  key={index}
+                  key={`price-${index}`}
                   x={dataPoint.time}
                   stroke="#9333ea"
                   strokeDasharray="3 3"
@@ -359,25 +369,58 @@ export default function ListingTrendsChart({ listingId }: ListingTrendsChartProp
             }
             return null;
           })}
+          {promoEvents.map((event, index) => {
+            const dataPoint = data.find(d => d.timestamp >= event.timestamp);
+            if (dataPoint) {
+              const color = event.type === 'promo_added' ? '#10b981' : '#f59e0b';
+              const label = event.type === 'promo_added' ? '🎁 Promo' : '❌ Promo end';
+              return (
+                <ReferenceLine
+                  key={`promo-${index}`}
+                  x={dataPoint.time}
+                  stroke={color}
+                  strokeDasharray="4 2"
+                  strokeWidth={2}
+                  label={{
+                    value: label,
+                    position: 'insideTopRight',
+                    fill: color,
+                    fontSize: 11,
+                    fontWeight: 'bold',
+                  }}
+                />
+              );
+            }
+            return null;
+          })}
         </LineChart>
       </ResponsiveContainer>
 
-      {priceChanges.length > 0 && (
+      {(priceChanges.length > 0 || promoEvents.length > 0) && (
         <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
           <p className="text-sm font-semibold text-purple-900 dark:text-purple-200 mb-2">
-            Price Changes
+            Price & Promotion History
           </p>
           <div className="space-y-1">
-            {priceChanges.map((change, index) => (
-              <p key={index} className="text-xs text-purple-800 dark:text-purple-300">
-                {new Date(change.timestamp).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: '2-digit'
-                })}: ${change.oldValue} → ${change.newValue}
-              </p>
-            ))}
+            {[
+              ...priceChanges.map(c => ({ timestamp: c.timestamp, text: `$${c.oldValue} → $${c.newValue}`, color: 'text-purple-800 dark:text-purple-300' })),
+              ...promoEvents.map(e => ({
+                timestamp: e.timestamp,
+                text: e.description,
+                color: e.type === 'promo_added' ? 'text-green-700 dark:text-green-300' : 'text-amber-700 dark:text-amber-300',
+              })),
+            ]
+              .sort((a, b) => a.timestamp - b.timestamp)
+              .map((entry, index) => (
+                <p key={index} className={`text-xs ${entry.color}`}>
+                  {new Date(entry.timestamp).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit'
+                  })}: {entry.text}
+                </p>
+              ))}
           </div>
         </div>
       )}

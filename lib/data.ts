@@ -7,11 +7,21 @@ export interface Review {
     date: string;
 }
 
-// Price change entry
+// Price change / promotion event entry
 export interface PriceChange {
     timestamp: string; // ISO date string
     old_price: number;
     new_price: number;
+    type?: 'price_change' | 'promo_added' | 'promo_removed';
+    description?: string; // Human-readable label for promo events
+}
+
+// Promotion offered by a manager for a specific lease term
+export interface Promotion {
+    leaseTermMonths: number;         // 6, 9, 12, 15, 18
+    type: 'months_free' | 'reduced_rate';
+    value: number;                   // months_free: # of free months; reduced_rate: % off
+    label?: string;                  // Optional custom label
 }
 
 // Binary amenity structure for NYC listings
@@ -57,6 +67,7 @@ export interface NYCApartmentListing {
     totalRatings?: number;
     reviews?: Review[];
     priceHistory?: PriceChange[]; // Array of price changes over time
+    promotions?: Promotion[];    // Active promotions for specific lease terms
 }
 
 export interface ApartmentListing {

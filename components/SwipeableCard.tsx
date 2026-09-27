@@ -2,7 +2,7 @@
 
 import { motion, useMotionValue, useTransform, PanInfo, animate } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
-import { ApartmentListing, NYCApartmentListing, Review } from "@/lib/data";
+import { ApartmentListing, NYCApartmentListing, Promotion, Review } from "@/lib/data";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useUser } from "@/contexts/UserContext";
@@ -22,6 +22,7 @@ interface SwipeableCardProps {
   isTriggeredCard?: boolean;
   isTopPick?: boolean;
   matchScore?: number;
+  selectedLeaseTerm?: number | null;
   scoreBreakdown?: {
     distance?: { score: number; percentage: number; label: string };
     amenities?: { score: number; percentage: number; label: string };
@@ -40,6 +41,7 @@ export default function SwipeableCard({
   isTriggeredCard = false,
   isTopPick = false,
   matchScore,
+  selectedLeaseTerm,
   scoreBreakdown,
 }: SwipeableCardProps) {
   const [imageIndex, setImageIndex] = useState(0);
@@ -68,6 +70,28 @@ export default function SwipeableCard({
   const [showAllAmenities, setShowAllAmenities] = useState(false);
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Find active promotion for the selected lease term
+  const activePromo: Promotion | null = (() => {
+    if (!selectedLeaseTerm) return null;
+    const nycListing = listing as NYCApartmentListing;
+    if (!nycListing.promotions || nycListing.promotions.length === 0) return null;
+    return nycListing.promotions.find(p => p.leaseTermMonths === selectedLeaseTerm) || null;
+  })();
+
+  const effectivePrice = (() => {
+    if (!activePromo) return listing.price;
+    if (activePromo.type === 'months_free') {
+      return Math.round(listing.price * (activePromo.leaseTermMonths - activePromo.value) / activePromo.leaseTermMonths);
+    }
+    return Math.round(listing.price * (1 - activePromo.value / 100));
+  })();
+
+  const promoLabel = activePromo
+    ? activePromo.label || (activePromo.type === 'months_free'
+        ? `${activePromo.value === 1 ? '1 month' : `${activePromo.value} months`} free`
+        : `${activePromo.value}% off`)
+    : null;
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const [isSwipingImage, setIsSwipingImage] = useState(false);
   const touchStartX = useRef<number>(0);
@@ -113,9 +137,11 @@ export default function SwipeableCard({
 
     const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
 
-    // Find the most recent price change within last 7 days
+    // Find the most recent price change within last 7 days (skip promo events)
     const recentChanges = nycListing.priceHistory.filter(
-      change => new Date(change.timestamp).getTime() > sevenDaysAgo
+      change => new Date(change.timestamp).getTime() > sevenDaysAgo &&
+        (!change.type || change.type === 'price_change') &&
+        change.old_price !== change.new_price
     );
 
     if (recentChanges.length > 0) {
@@ -635,10 +661,28 @@ export default function SwipeableCard({
               >
                 {listing.address}
               </p>
-              <div className="flex items-center gap-2 mt-2">
-                <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                  ${listing.price.toLocaleString()}<span className="text-sm text-gray-500 dark:text-gray-400">/mo</span>
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                <div className="flex items-baseline gap-1.5">
+                  {activePromo ? (
+                    <>
+                      <span className="text-base line-through text-gray-400 dark:text-gray-500">
+                        ${listing.price.toLocaleString()}
+                      </span>
+                      <span className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        ${effectivePrice.toLocaleString()}<span className="text-sm text-gray-500 dark:text-gray-400">/mo</span>
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                      ${listing.price.toLocaleString()}<span className="text-sm text-gray-500 dark:text-gray-400">/mo</span>
+                    </span>
+                  )}
                 </div>
+                {activePromo && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+                    🎁 {promoLabel} · {selectedLeaseTerm}-mo lease
+                  </span>
+                )}
                 {recentPriceChange && (
                   <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
                     recentPriceChange.type === "decrease"

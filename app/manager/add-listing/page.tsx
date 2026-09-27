@@ -7,7 +7,7 @@ import { ApartmentListing } from "@/lib/data";
 import { textStyles, inputStyles, buttonStyles } from "@/lib/styles";
 import HavenLogo from "@/components/HavenLogo";
 import DarkModeToggle from "@/components/DarkModeToggle";
-import { createListing } from "@/lib/listings";
+import { createListing, Promotion } from "@/lib/listings";
 import { geocodeAddress } from "@/lib/geocoding";
 
 export default function AddListingPage() {
@@ -39,6 +39,7 @@ export default function AddListingPage() {
     parking: false,
     pool: false,
   });
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -73,6 +74,18 @@ export default function AddListingPage() {
       ...prev,
       [amenity]: !prev[amenity]
     }));
+  };
+
+  const addPromotion = () => {
+    setPromotions(prev => [...prev, { leaseTermMonths: 12, type: 'months_free', value: 1 }]);
+  };
+
+  const removePromotion = (index: number) => {
+    setPromotions(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updatePromotion = (index: number, field: keyof Promotion, value: any) => {
+    setPromotions(prev => prev.map((p, i) => i === index ? { ...p, [field]: value } : p));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,6 +157,7 @@ export default function AddListingPage() {
         renovationYear: formData.renovationYear ? parseInt(formData.renovationYear) : null,
         outdoorArea: formData.outdoorArea,
         view: formData.view,
+        promotions,
       });
 
       if (listing) {
@@ -488,6 +502,72 @@ export default function AddListingPage() {
                   <option value="Other">Other</option>
                 </select>
               </div>
+            </div>
+
+            {/* Promotions */}
+            <div>
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <label className={inputStyles.label}>Promotions</label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Offer discounts for specific lease terms to attract more renters
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addPromotion}
+                  className="text-sm px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors whitespace-nowrap"
+                >
+                  + Add Promotion
+                </button>
+              </div>
+              {promotions.length === 0 ? (
+                <p className="text-sm text-gray-400 dark:text-gray-500 italic">No promotions — add one above</p>
+              ) : (
+                <div className="space-y-2">
+                  {promotions.map((promo, index) => (
+                    <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg flex-wrap">
+                      <select
+                        value={promo.leaseTermMonths}
+                        onChange={(e) => updatePromotion(index, 'leaseTermMonths', parseInt(e.target.value))}
+                        className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      >
+                        {[6, 9, 12, 15, 18].map(m => <option key={m} value={m}>{m} months</option>)}
+                      </select>
+                      <select
+                        value={promo.type}
+                        onChange={(e) => updatePromotion(index, 'type', e.target.value)}
+                        className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      >
+                        <option value="months_free">Months free</option>
+                        <option value="reduced_rate">% discount</option>
+                      </select>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          value={promo.value}
+                          onChange={(e) => updatePromotion(index, 'value', parseFloat(e.target.value) || 0)}
+                          placeholder={promo.type === 'months_free' ? '# months' : '% off'}
+                          min={0}
+                          max={promo.type === 'months_free' ? promo.leaseTermMonths - 1 : 99}
+                          step={1}
+                          className="w-20 text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                        <span className="text-xs text-gray-500">{promo.type === 'months_free' ? 'mo' : '%'}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removePromotion(index)}
+                        className="ml-auto p-1.5 text-red-400 hover:text-red-600 transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Images */}

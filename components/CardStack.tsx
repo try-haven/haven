@@ -11,6 +11,15 @@ import { useUser } from "@/contexts/UserContext";
 // Set to true to re-enable ads in the swipe flow
 const SHOW_ADS = false;
 
+const LEASE_TERM_OPTIONS = [
+  { label: 'Any', value: null },
+  { label: '6 mo', value: 6 },
+  { label: '9 mo', value: 9 },
+  { label: '12 mo', value: 12 },
+  { label: '15 mo', value: 15 },
+  { label: '18 mo', value: 18 },
+];
+
 // Extended listing type with recommendation scores
 type ListingWithScore = (ApartmentListing | NYCApartmentListing) & {
   matchScore?: number;
@@ -32,6 +41,7 @@ interface CardStackProps {
 export default function CardStack({ listings, onLikedChange, initialLikedIds = new Set(), onViewLiked, initialCompleted = false, onCompletedChange, showMatchScores = false, onSwipeCountUpdate, onStartOver }: CardStackProps) {
   const { user } = useUser();
   const [isMobile, setIsMobile] = useState(false);
+  const [selectedLeaseTerm, setSelectedLeaseTerm] = useState<number | null>(null);
 
   // Detect mobile for positioning progress indicator
   useEffect(() => {
@@ -561,8 +571,26 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
       {/* Ad Overlay */}
       {SHOW_ADS && <AdOverlay position="bottom-right" />}
 
+      {/* Lease Term Filter Pill Strip */}
+      <div className="flex-shrink-0 px-4 pt-2 pb-1 flex items-center gap-1.5 overflow-x-auto scrollbar-hide z-20">
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap mr-0.5">Lease:</span>
+        {LEASE_TERM_OPTIONS.map(opt => (
+          <button
+            key={String(opt.value)}
+            onClick={() => setSelectedLeaseTerm(opt.value)}
+            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors border ${
+              selectedLeaseTerm === opt.value
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-indigo-400'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
       {/* Card Stack */}
-      <div className="relative w-full max-w-5xl mx-auto flex-1 overflow-hidden mb-20 md:mb-0">
+      <div className="relative w-full max-w-5xl mx-auto flex-1 overflow-hidden min-h-0 mb-20 md:mb-0">
         {(() => {
           // Check if current item is an ad
           const currentItem = items[currentIndex];
@@ -609,6 +637,7 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
                   isTopPick={(item.data as any).isTopPick}
                   matchScore={showMatchScores ? (item.data as any).matchScore : undefined}
                   scoreBreakdown={showMatchScores ? (item.data as any).scoreBreakdown : undefined}
+                  selectedLeaseTerm={selectedLeaseTerm}
                 />
               );
             }
@@ -755,8 +784,8 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
         </svg>
       </button>
 
-      {/* Progress Indicator - right-aligned on mobile to avoid overlap with match score badge */}
-      <div className={`absolute top-4 z-10 flex gap-2 ${isMobile ? 'right-4' : 'left-1/2 -translate-x-1/2'}`}>
+      {/* Progress Indicator - positioned below pill strip */}
+      <div className={`absolute top-12 z-10 flex gap-2 ${isMobile ? 'right-4' : 'left-1/2 -translate-x-1/2'}`}>
         <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg text-sm font-medium text-gray-700 dark:text-gray-200">
           {items[currentIndex]?.type === "ad" ? getListingIndex(currentIndex) : getListingIndex(currentIndex) + 1} / {listings.length}
         </div>
