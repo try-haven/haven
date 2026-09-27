@@ -572,7 +572,7 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
       {SHOW_ADS && <AdOverlay position="bottom-right" />}
 
       {/* Lease Term Filter Pill Strip */}
-      <div className="flex-shrink-0 px-4 pt-2 pb-1 flex items-center gap-1.5 overflow-x-auto scrollbar-hide z-20">
+      <div className="flex-shrink-0 px-4 pt-2 pb-1 flex items-center justify-center gap-1.5 overflow-x-auto scrollbar-hide z-20">
         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap mr-0.5">Lease:</span>
         {LEASE_TERM_OPTIONS.map(opt => (
           <button

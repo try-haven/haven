@@ -72,12 +72,19 @@ export default function SwipeableCard({
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Find active promotion for the selected lease term
+  // Find active promotion — exact match when a term is selected, best available when "Any"
   const activePromo: Promotion | null = (() => {
-    if (!selectedLeaseTerm) return null;
     const nycListing = listing as NYCApartmentListing;
     if (!nycListing.promotions || nycListing.promotions.length === 0) return null;
-    return nycListing.promotions.find(p => p.leaseTermMonths === selectedLeaseTerm) || null;
+    if (selectedLeaseTerm) {
+      return nycListing.promotions.find(p => p.leaseTermMonths === selectedLeaseTerm) || null;
+    }
+    // No term selected: pick the promo with the highest effective savings %
+    const savingsPct = (p: Promotion) =>
+      p.type === 'months_free' ? p.value / p.leaseTermMonths : p.value / 100;
+    return nycListing.promotions.reduce((best, p) =>
+      savingsPct(p) > savingsPct(best) ? p : best
+    );
   })();
 
   const effectivePrice = (() => {
@@ -90,8 +97,8 @@ export default function SwipeableCard({
 
   const promoLabel = activePromo
     ? activePromo.label || (activePromo.type === 'months_free'
-        ? `${activePromo.value === 1 ? '1 month' : `${activePromo.value} months`} free`
-        : `${activePromo.value}% off`)
+        ? `${activePromo.value === 1 ? '1 month' : `${activePromo.value} months`} free on ${activePromo.leaseTermMonths}-mo lease`
+        : `${activePromo.value}% off on ${activePromo.leaseTermMonths}-mo lease`)
     : null;
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const [isSwipingImage, setIsSwipingImage] = useState(false);
@@ -345,7 +352,7 @@ export default function SwipeableCard({
       <div className="w-full max-w-[85vw] mx-auto h-full">
         <div
           ref={cardContentRef}
-          className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl h-full max-h-[72vh] md:max-h-[90vh] lg:max-h-[93vh] flex flex-col md:flex-row overflow-hidden"
+          className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl h-full max-h-[67vh] md:max-h-[90vh] lg:max-h-[93vh] flex flex-col md:flex-row overflow-hidden"
         >
           {/* Image Carousel - Left 2/3 */}
           <div
@@ -885,7 +892,7 @@ export default function SwipeableCard({
             </div>
 
             {/* Contact & Apply */}
-            {('apply_url' in listing || 'contact_phone' in listing || 'contact_email' in listing) && (() => {
+            {(() => {
               const nycListing = listing as NYCApartmentListing;
               const hasContact = !!(nycListing.contact_phone || nycListing.contact_email);
               const hasApply = !!nycListing.apply_url;
