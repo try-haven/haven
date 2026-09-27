@@ -39,6 +39,7 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
   const [userRatingData, setUserRatingData] = useState<{ rating: number; userId: string } | null>(null);
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [showContactInfo, setShowContactInfo] = useState(false);
   const cardContentRef = useRef<HTMLDivElement>(null);
 
   // Geocode address when listing is selected
@@ -153,6 +154,7 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
       cardContentRef.current.scrollTop = 0;
       setLastScrollY(0);
       setIsNavbarVisible(true);
+      setShowContactInfo(false);
     }
   }, [selectedListing]);
 
@@ -502,6 +504,71 @@ export default function LikedListings({ likedListings, onBack, onRemoveLike, onB
                     year: "numeric",
                   })}
                 </p>
+
+                {/* Contact & Apply */}
+                {(() => {
+                  const nycListing = selectedListing as NYCApartmentListing;
+                  const hasContact = !!(nycListing.contact_phone || nycListing.contact_email);
+                  const hasApply = !!nycListing.apply_url;
+                  if (!hasContact && !hasApply) return null;
+                  return (
+                    <div className="mb-4">
+                      <div className="flex gap-3">
+                        {hasContact && (
+                          <button
+                            onClick={() => setShowContactInfo(prev => !prev)}
+                            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full border-2 border-indigo-300 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 font-semibold hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            Contact
+                          </button>
+                        )}
+                        {hasApply && (
+                          <a
+                            href={nycListing.apply_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            Apply Now
+                          </a>
+                        )}
+                      </div>
+                      {showContactInfo && hasContact && (
+                        <div className="mt-3 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl space-y-2">
+                          {nycListing.contact_phone && (
+                            <a
+                              href={`tel:${nycListing.contact_phone}`}
+                              className="flex items-center gap-3 text-indigo-700 dark:text-indigo-300 hover:underline"
+                            >
+                              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                              </svg>
+                              <span>{nycListing.contact_phone}</span>
+                            </a>
+                          )}
+                          {nycListing.contact_email && (
+                            <a
+                              href={`mailto:${nycListing.contact_email}`}
+                              className="flex items-center gap-3 text-indigo-700 dark:text-indigo-300 hover:underline"
+                            >
+                              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                              <span>{nycListing.contact_email}</span>
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 <button
                   onClick={() => {
                     onRemoveLike(selectedListing.id);

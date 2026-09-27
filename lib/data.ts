@@ -68,6 +68,9 @@ export interface NYCApartmentListing {
     reviews?: Review[];
     priceHistory?: PriceChange[]; // Array of price changes over time
     promotions?: Promotion[];    // Active promotions for specific lease terms
+    contact_phone?: string;      // Optional manager phone number
+    contact_email?: string;      // Optional manager email
+    apply_url?: string;          // Required link to application portal
 }
 
 export interface ApartmentListing {

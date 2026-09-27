@@ -244,6 +244,30 @@ function randFloat(min: number, max: number, seed: number): number {
   return seededRand(seed) * (max - min) + min;
 }
 
+// ─── Contact info generator ───────────────────────────────────────────────────
+
+const leasingCompanies = [
+  'Hudson Metro', 'Skyline Leasing', 'Metro Living', 'Park Ave Properties',
+  'City Nest Realty', 'Brownstone Partners', 'Manhattan Homes', 'Borough Living',
+];
+
+function generateContactInfo(seed: number, unitId: number): { apply_url: string; contact_phone?: string; contact_email?: string } {
+  const company = pick(leasingCompanies, seed + 200);
+  const slug = company.toLowerCase().replace(/\s+/g, '-');
+  const apply_url = `https://apply.${slug}.example.com/unit/${unitId}`;
+
+  const areaCode = pick(['212', '646', '718', '917', '347'], seed + 201);
+  const phone = seededRand(seed + 202) < 0.65
+    ? `(${areaCode}) ${randInt(200, 999, seed + 203)}-${String(randInt(1000, 9999, seed + 204)).padStart(4, '0')}`
+    : undefined;
+
+  const email = seededRand(seed + 205) < 0.75
+    ? `leasing@${slug}.example.com`
+    : undefined;
+
+  return { apply_url, contact_phone: phone, contact_email: email };
+}
+
 // ─── Promotion generator ─────────────────────────────────────────────────────
 
 const LEASE_TERMS = [6, 9, 12, 12, 12, 15, 18] as const; // weighted toward 12
@@ -378,6 +402,7 @@ function generateListing(unitId: number, nbhd: Neighborhood, managerId: string) 
     total_ratings: 0,
     price_history: [],
     promotions: generatePromotions(s + 100),
+    ...generateContactInfo(s, unitId),
   };
 }
 

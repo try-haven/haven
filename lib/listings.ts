@@ -76,6 +76,9 @@ export interface ListingNYC {
   updated_at?: string;
   price_history?: PriceChange[]; // Array of price changes over time
   promotions?: Promotion[];      // Active promotions
+  contact_phone?: string;
+  contact_email?: string;
+  apply_url?: string;
 }
 
 // Helper: Convert "0"/"1" strings to boolean
@@ -133,6 +136,9 @@ function convertNYCListing(dbListing: ListingNYC): NYCApartmentListing {
     totalRatings: dbListing.total_ratings,
     priceHistory: dbListing.price_history || [], // Price changes over time
     promotions: dbListing.promotions || [],       // Active promotions
+    contact_phone: dbListing.contact_phone || undefined,
+    contact_email: dbListing.contact_email || undefined,
+    apply_url: dbListing.apply_url || undefined,
   };
 }
 
@@ -439,6 +445,9 @@ export async function createListing(
     outdoorArea?: string;
     view?: string;
     promotions?: Promotion[];
+    contact_phone?: string;
+    contact_email?: string;
+    apply_url?: string;
   }
 ): Promise<Listing | null> {
   try {
@@ -518,6 +527,9 @@ export async function createListing(
         average_rating: null,
         total_ratings: 0,
         promotions: listing.promotions || [],
+        contact_phone: listing.contact_phone || null,
+        contact_email: listing.contact_email || null,
+        apply_url: listing.apply_url || null,
       };
 
       await supabase
@@ -595,6 +607,9 @@ export async function updateListingNYC(
     outdoorArea?: string;
     view?: string;
     promotions?: Promotion[];
+    contact_phone?: string;
+    contact_email?: string;
+    apply_url?: string;
   }
 ): Promise<boolean> {
   try {
@@ -705,6 +720,9 @@ export async function updateListingNYC(
     if (updates.outdoorArea !== undefined) updateData['Outdoor Area'] = updates.outdoorArea;
     if (updates.view !== undefined) updateData['View'] = updates.view;
     if (updates.promotions !== undefined) updateData['promotions'] = updates.promotions;
+    if (updates.contact_phone !== undefined) updateData['contact_phone'] = updates.contact_phone || null;
+    if (updates.contact_email !== undefined) updateData['contact_email'] = updates.contact_email || null;
+    if (updates.apply_url !== undefined) updateData['apply_url'] = updates.apply_url || null;
 
     // Geocode if address changed
     if (updates.address) {

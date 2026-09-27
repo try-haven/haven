@@ -27,6 +27,9 @@ export default function AddListingPage() {
     images: "",
     outdoorArea: "None",
     view: "None",
+    applyUrl: "",
+    contactPhone: "",
+    contactEmail: "",
   });
   const [amenities, setAmenities] = useState({
     washerDryerInUnit: false,
@@ -103,6 +106,12 @@ export default function AddListingPage() {
         return;
       }
 
+      if (!formData.applyUrl) {
+        setError("Application URL is required so renters can apply");
+        setIsSubmitting(false);
+        return;
+      }
+
       // Parse image URLs
       const imageUrls = formData.images
         .split("\n")
@@ -158,6 +167,9 @@ export default function AddListingPage() {
         outdoorArea: formData.outdoorArea,
         view: formData.view,
         promotions,
+        apply_url: formData.applyUrl,
+        contact_phone: formData.contactPhone || undefined,
+        contact_email: formData.contactEmail || undefined,
       });
 
       if (listing) {
@@ -568,6 +580,49 @@ export default function AddListingPage() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Contact & Apply */}
+            <div className="space-y-4">
+              <div>
+                <label className={inputStyles.label}>
+                  Application URL <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="url"
+                  name="applyUrl"
+                  value={formData.applyUrl}
+                  onChange={handleChange}
+                  placeholder="https://apply.example.com/listing/123"
+                  className={inputStyles.standard}
+                  required
+                />
+                <p className={textStyles.helperWithMargin}>Link where renters can submit their application</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={inputStyles.label}>Contact Phone <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <input
+                    type="tel"
+                    name="contactPhone"
+                    value={formData.contactPhone}
+                    onChange={handleChange}
+                    placeholder="(212) 555-0100"
+                    className={inputStyles.standard}
+                  />
+                </div>
+                <div>
+                  <label className={inputStyles.label}>Contact Email <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <input
+                    type="email"
+                    name="contactEmail"
+                    value={formData.contactEmail}
+                    onChange={handleChange}
+                    placeholder="leasing@example.com"
+                    className={inputStyles.standard}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Images */}
