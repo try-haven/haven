@@ -13,7 +13,8 @@
     "seed": "tsx scripts/seed-listings.ts",
     "clear-listings": "tsx scripts/clear-listings.ts",
     "reset-user": "tsx scripts/reset-user-preferences.ts",
-    "check-geocoding": "tsx scripts/check-geocoding.ts"
+    "check-geocoding": "tsx scripts/check-geocoding.ts",
+    "seed-nyc": "tsx scripts/seed-nyc-listings.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.87.1",

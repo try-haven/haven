@@ -108,6 +108,7 @@ function PreferencesContent() {
 
   return (
     <ApartmentPreferences
+      city={userAddress || currentAddress}
       onNext={async (apartmentPrefs) => {
         try {
           // Update all preferences in user context

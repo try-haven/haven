@@ -203,7 +203,7 @@ Haven features a sophisticated, **ML-powered** recommendation system that combin
 
 ## NYC Listings Dataset 🗽
 
-Haven now features a comprehensive dataset of **200 real NYC apartment listings** with rich metadata:
+Haven now features a comprehensive dataset of **475 NYC apartment listings** with rich metadata:
 
 ### Dataset Features
 - **Geographic Coverage**: All major NYC neighborhoods (Manhattan, Brooklyn, Queens, Bronx, Staten Island)
@@ -915,6 +915,16 @@ This will:
 npm run check-geocoding
 ```
 Shows which listings have coordinates and which are missing.
+
+#### Seed NYC Listings (~475 listings)
+```bash
+npm run seed-nyc
+```
+Seeds 475 generated NYC listings across 21 neighborhoods into the `listings_nyc` table. Uses pre-set coordinates (no geocoding needed). Creates a demo manager account if one doesn't exist.
+
+Demo manager credentials:
+- **Email**: `demo-manager@haven.app`
+- **Password**: `demo123456`
 
 #### Clear All Listings
 ```bash

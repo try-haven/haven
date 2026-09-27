@@ -25,13 +25,68 @@ interface ApartmentPreferencesData {
   weights?: ScoringWeights;
 }
 
+// Neighborhoods keyed by a normalized city slug.
+// Add a new entry here when listings for a new city are added.
+const NEIGHBORHOODS_BY_CITY: Record<string, string[]> = {
+  "new york": [
+    "Upper West Side", "Upper East Side", "Midtown East", "Midtown West",
+    "Chelsea", "Greenwich Village", "East Village", "Lower East Side",
+    "SoHo", "Tribeca", "Financial District", "Harlem", "Washington Heights",
+    "Williamsburg", "Bushwick", "Brooklyn Heights", "Park Slope",
+    "Crown Heights", "Bed-Stuy", "Astoria", "Long Island City",
+  ],
+  "seattle": [
+    "South Lake Union", "Capitol Hill", "Fremont", "Ballard", "Queen Anne",
+    "Belltown", "Pioneer Square", "First Hill", "Madison Park", "Wallingford",
+    "Green Lake", "Phinney Ridge", "Columbia City", "West Seattle",
+  ],
+  "san francisco": [
+    "Mission District", "Castro", "SoMa", "Hayes Valley", "Nob Hill",
+    "Pacific Heights", "Marina", "North Beach", "Haight-Ashbury", "Sunset",
+    "Richmond", "Bernal Heights", "Potrero Hill", "Dogpatch", "Noe Valley",
+  ],
+  "austin": [
+    "East Austin", "South Congress", "Downtown", "Zilker", "Hyde Park",
+    "North Loop", "Mueller", "Bouldin Creek", "Travis Heights", "Clarksville",
+  ],
+  "chicago": [
+    "Wicker Park", "Lincoln Park", "Logan Square", "Bucktown", "River North",
+    "West Loop", "Lakeview", "Pilsen", "Hyde Park", "Andersonville",
+    "Roscoe Village", "Ukrainian Village", "Gold Coast",
+  ],
+  "los angeles": [
+    "Silver Lake", "Echo Park", "Los Feliz", "Highland Park", "Venice",
+    "Santa Monica", "Culver City", "West Hollywood", "Koreatown",
+    "Downtown LA", "Arts District", "Leimert Park",
+  ],
+  "boston": [
+    "South End", "Back Bay", "Jamaica Plain", "Somerville", "Cambridge",
+    "Allston", "Brighton", "Fenway", "North End", "Charlestown",
+    "Brookline", "Roxbury",
+  ],
+};
+
+function detectCityKey(address: string): string | null {
+  const lower = address.toLowerCase();
+  for (const key of Object.keys(NEIGHBORHOODS_BY_CITY)) {
+    if (lower.includes(key)) return key;
+  }
+  // Extra aliases
+  if (lower.includes("nyc") || lower.includes("brooklyn") || lower.includes("queens") || lower.includes("bronx")) return "new york";
+  if (lower.includes("sf") || lower.includes("bay area")) return "san francisco";
+  return null;
+}
+
 interface ApartmentPreferencesProps {
   onNext: (preferences: ApartmentPreferencesData) => void;
   onBack?: () => void;
   initialPreferences?: ApartmentPreferencesData;
+  city?: string;
 }
 
-export default function ApartmentPreferences({ onNext, onBack, initialPreferences }: ApartmentPreferencesProps) {
+export default function ApartmentPreferences({ onNext, onBack, initialPreferences, city }: ApartmentPreferencesProps) {
+  const cityKey = city ? detectCityKey(city) : null;
+  const availableNeighborhoods = cityKey ? NEIGHBORHOODS_BY_CITY[cityKey] : null;
   // State for preferences - auto-set price to full range (0-10000)
   const [priceMin, setPriceMin] = useState<number>(initialPreferences?.priceMin ?? 0);
   const [priceMax, setPriceMax] = useState<number>(initialPreferences?.priceMax ?? 10000);
@@ -465,58 +520,41 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
             </div>
           </div>
 
-          {/* Neighborhood Filter */}
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-            <div className="mb-3">
-              <label className="text-sm font-medium text-gray-900 dark:text-white">
-                Neighborhoods
-              </label>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Select specific neighborhoods you're interested in (optional)
-              </p>
+          {/* Neighborhood Filter — only shown when we know the city */}
+          {availableNeighborhoods && (
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
+              <div className="mb-3">
+                <label className="text-sm font-medium text-gray-900 dark:text-white">
+                  Neighborhoods
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Select specific neighborhoods you're interested in (optional)
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                {availableNeighborhoods.map((neighborhood) => (
+                  <button
+                    key={neighborhood}
+                    type="button"
+                    onClick={() => {
+                      setRequiredNeighborhoods(prev =>
+                        prev.includes(neighborhood)
+                          ? prev.filter(n => n !== neighborhood)
+                          : [...prev, neighborhood]
+                      );
+                    }}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+                      requiredNeighborhoods.includes(neighborhood)
+                        ? "bg-indigo-600 text-white"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                    }`}
+                  >
+                    {neighborhood}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
-              {[
-                "Manhattan",
-                "Brooklyn",
-                "Queens",
-                "Bronx",
-                "Staten Island",
-                "Upper East Side",
-                "Upper West Side",
-                "Midtown",
-                "Chelsea",
-                "Greenwich Village",
-                "SoHo",
-                "TriBeCa",
-                "Financial District",
-                "Williamsburg",
-                "DUMBO",
-                "Park Slope",
-                "Astoria",
-                "Long Island City",
-              ].map((neighborhood) => (
-                <button
-                  key={neighborhood}
-                  type="button"
-                  onClick={() => {
-                    setRequiredNeighborhoods(prev =>
-                      prev.includes(neighborhood)
-                        ? prev.filter(n => n !== neighborhood)
-                        : [...prev, neighborhood]
-                    );
-                  }}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
-                    requiredNeighborhoods.includes(neighborhood)
-                      ? "bg-indigo-600 text-white"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
-                >
-                  {neighborhood}
-                </button>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Error Message */}

@@ -8,6 +8,9 @@ import AdOverlay from "./AdOverlay";
 import AdCard from "./AdCard";
 import { useUser } from "@/contexts/UserContext";
 
+// Set to true to re-enable ads in the swipe flow
+const SHOW_ADS = false;
+
 // Extended listing type with recommendation scores
 type ListingWithScore = (ApartmentListing | NYCApartmentListing) & {
   matchScore?: number;
@@ -206,7 +209,7 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
     listings.forEach((listing, idx) => {
       items.push({ type: "listing", data: listing });
       if ((idx + 1) % 5 === 0 && idx < listings.length - 1) {
-        items.push({ type: "ad", adIndex: adCount++ });
+        if (SHOW_ADS) items.push({ type: "ad", adIndex: adCount++ });
       }
     });
     const totalItems = items.length;
@@ -224,7 +227,7 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
     listings.forEach((listing, idx) => {
       items.push({ type: "listing", data: listing });
       if ((idx + 1) % 5 === 0 && idx < listings.length - 1) {
-        items.push({ type: "ad", adIndex: adCount++ });
+        if (SHOW_ADS) items.push({ type: "ad", adIndex: adCount++ });
       }
     });
 
@@ -363,7 +366,7 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
     listings.forEach((listing, idx) => {
       items.push({ type: "listing", data: listing });
       if ((idx + 1) % 5 === 0 && idx < listings.length - 1) {
-        items.push({ type: "ad", adIndex: adCount++ });
+        if (SHOW_ADS) items.push({ type: "ad", adIndex: adCount++ });
       }
     });
 
@@ -389,7 +392,7 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
     listings.forEach((listing, idx) => {
       items.push({ type: "listing", data: listing });
       if ((idx + 1) % 5 === 0 && idx < listings.length - 1) {
-        items.push({ type: "ad", adIndex: adCount++ });
+        if (SHOW_ADS) items.push({ type: "ad", adIndex: adCount++ });
       }
     });
 
@@ -432,7 +435,7 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
       listings.forEach((listing, idx) => {
         items.push({ type: "listing", data: listing });
         if ((idx + 1) % 5 === 0 && idx < listings.length - 1) {
-          items.push({ type: "ad", adIndex: adCount++ });
+          if (SHOW_ADS) items.push({ type: "ad", adIndex: adCount++ });
         }
       });
 
@@ -484,7 +487,7 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
       listings.forEach((listing, idx) => {
         items.push({ type: "listing", data: listing });
         if ((idx + 1) % 5 === 0 && idx < listings.length - 1) {
-          items.push({ type: "ad", adIndex: adCount++ });
+          if (SHOW_ADS) items.push({ type: "ad", adIndex: adCount++ });
         }
       });
       return items;
@@ -556,7 +559,7 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
   return (
     <div className="relative w-full h-screen flex flex-col pb-safe overflow-hidden">
       {/* Ad Overlay */}
-      <AdOverlay position="bottom-right" />
+      {SHOW_ADS && <AdOverlay position="bottom-right" />}
 
       {/* Card Stack */}
       <div className="relative w-full max-w-5xl mx-auto flex-1 overflow-hidden mb-20 md:mb-0">
