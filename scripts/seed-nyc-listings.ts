@@ -413,7 +413,19 @@ async function seedNYCListings() {
     console.log('Created demo manager\n');
   }
 
-  // Step 2: Generate all listings
+  // Step 2: Clear existing listings owned by the demo manager
+  console.log('Clearing existing demo listings...');
+  const { error: deleteError } = await supabase
+    .from('listings_nyc')
+    .delete()
+    .eq('manager_id', managerId);
+  if (deleteError) {
+    console.error('Failed to clear existing listings:', deleteError.message);
+    process.exit(1);
+  }
+  console.log('Cleared.\n');
+
+  // Step 3: Generate all listings
   const allListings = [];
   let unitId = 1001;
 
@@ -425,7 +437,7 @@ async function seedNYCListings() {
 
   console.log(`Generated ${allListings.length} listings across ${neighborhoods.length} neighborhoods\n`);
 
-  // Step 3: Insert in batches of 50
+  // Step 4: Insert in batches of 50
   const BATCH_SIZE = 50;
   let inserted = 0;
 
