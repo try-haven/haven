@@ -50,6 +50,7 @@ interface UserPreferences {
 
 export interface ScoreBreakdown {
   distance?: { score: number; percentage: number; label: string }; // e.g., "15 mi" or "Nearby"
+  commute?: { score: number; percentage: number; label: string };  // e.g., "18 min" (replaces distance when available)
   amenities?: { score: number; percentage: number; label: string }; // e.g., "Great match" or "Pool, Gym"
   propertyFeatures?: { score: number; percentage: number; label: string }; // e.g., "850 sqft, Built 2015"
   quality?: { score: number; percentage: number; label: string };   // e.g., "High quality" or "6 photos"
@@ -104,6 +105,18 @@ export function extractAmenities(listing: ApartmentListing | NYCApartmentListing
 
   // Old format - amenities is already an array
   return (listing as ApartmentListing).amenities || [];
+}
+
+/**
+ * Score commute time — shorter is better, mapped to 0-1
+ */
+function scoreByCommuteTime(minutes: number): number {
+  if (minutes <= 15) return 1.0;
+  if (minutes <= 30) return 0.85;
+  if (minutes <= 45) return 0.65;
+  if (minutes <= 60) return 0.45;
+  if (minutes <= 90) return 0.25;
+  return 0.05;
 }
 
 /**
@@ -263,7 +276,8 @@ function learnFromSwipeHistory(
 function calculateMatchScore(
   listing: ApartmentListing | NYCApartmentListing,
   preferences: UserPreferences,
-  learnedPreferences: LearnedPreferencesInternal
+  learnedPreferences: LearnedPreferencesInternal,
+  commuteMinutes?: number
 ): { score: number; breakdown: ScoreBreakdown } {
   // Use rule-based scoring with learned weights
   let score = 0;
@@ -286,9 +300,16 @@ function calculateMatchScore(
   };
 
   // Location/Distance match (weight: 40) - PRIMARY FACTOR
-  // Calculate distance between user's preferred location and listing
-  // This is the most important factor - far listings are essentially unusable
-  if (
+  // Use commute time when available, fall back to straight-line distance
+  if (commuteMinutes !== undefined) {
+    const commuteScore = scoreByCommuteTime(commuteMinutes);
+    const commutePoints = weights.distance * commuteScore;
+    addScore(weights.distance, commuteScore);
+    const label = commuteMinutes < 60
+      ? `${commuteMinutes} min`
+      : `${Math.floor(commuteMinutes / 60)}h ${commuteMinutes % 60}m`;
+    breakdown.commute = { score: commutePoints, percentage: commuteScore * 100, label };
+  } else if (
     preferences.latitude &&
     preferences.longitude &&
     listing.latitude &&
@@ -304,7 +325,6 @@ function calculateMatchScore(
     const locationPoints = weights.distance * locationScore;
     addScore(weights.distance, locationScore);
 
-    // Generate label
     let label = "";
     if (distanceInMiles < 1) label = "< 1 mi";
     else if (distanceInMiles < 5) label = `${distanceInMiles.toFixed(1)} mi`;
@@ -312,11 +332,7 @@ function calculateMatchScore(
     else if (distanceInMiles < 50) label = `${Math.round(distanceInMiles)} mi away`;
     else label = `${Math.round(distanceInMiles)} mi (far)`;
 
-    breakdown.distance = {
-      score: locationPoints,
-      percentage: locationScore * 100,
-      label
-    };
+    breakdown.distance = { score: locationPoints, percentage: locationScore * 100, label };
   }
 
   // Amenities match (weight: 35) - SECONDARY BEHAVIORAL FACTOR
@@ -697,7 +713,8 @@ export function applyHardFilters(
 export function rankListings(
   listings: (ApartmentListing | NYCApartmentListing)[],
   userPreferences: UserPreferences,
-  swipeHistory: SwipeHistory[] = []
+  swipeHistory: SwipeHistory[] = [],
+  commuteMinutesMap?: Map<string, number>
 ): ListingWithScore[] {
   // Use stored learned preferences if available, otherwise calculate from swipe history
   let learnedPreferences: LearnedPreferencesInternal;
@@ -712,7 +729,8 @@ export function rankListings(
 
   // Calculate score for each listing
   const listingsWithScores: ListingWithScore[] = listings.map((listing) => {
-    const { score: matchScore, breakdown } = calculateMatchScore(listing, userPreferences, learnedPreferences);
+    const commuteMinutes = commuteMinutesMap?.get(listing.id);
+    const { score: matchScore, breakdown } = calculateMatchScore(listing, userPreferences, learnedPreferences, commuteMinutes);
 
     return {
       ...listing,

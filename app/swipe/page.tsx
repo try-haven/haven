@@ -18,6 +18,7 @@ import {
   extractAmenities,
 } from "@/lib/recommendations";
 import { trainModel, isModelValid, suggestScoringWeights } from "@/lib/ml-model";
+import { fetchCommuteMinutes } from "@/lib/commute";
 import confetti from "canvas-confetti";
 
 export default function SwipePage() {
@@ -39,6 +40,7 @@ export default function SwipePage() {
     amenityDetails?: string;
     tiedWith?: string[];
   } | null>(null);
+  const [commuteMinutes, setCommuteMinutes] = useState<Map<string, number>>(new Map());
 
   // Wait for ALL contexts to finish loading before rendering to prevent race conditions
   const isLoading = userLoading || isLoadingListings || likedLoading;
@@ -244,6 +246,44 @@ export default function SwipePage() {
     }
   };
 
+  // Fetch commute times for top 50 closest listings whenever the user's location or mode changes
+  useEffect(() => {
+    const lat = user?.preferences?.latitude;
+    const lng = user?.preferences?.longitude;
+    if (!lat || !lng || listings.length === 0) return;
+
+    const mode = (user?.preferences?.commute as string[] | undefined)?.[0] || "car";
+
+    // Sort by Manhattan distance to user to fetch most relevant listings first
+    const candidates = [...listings]
+      .filter((l: any) => l.latitude && l.longitude)
+      .sort((a: any, b: any) => {
+        const dA = Math.abs(a.latitude - lat) + Math.abs(a.longitude - lng);
+        const dB = Math.abs(b.latitude - lat) + Math.abs(b.longitude - lng);
+        return dA - dB;
+      })
+      .slice(0, 50);
+
+    let cancelled = false;
+    (async () => {
+      for (const listing of candidates) {
+        if (cancelled) break;
+        const mins = await fetchCommuteMinutes(mode, lat, lng, (listing as any).latitude, (listing as any).longitude);
+        if (mins !== null && !cancelled) {
+          setCommuteMinutes(prev => {
+            const next = new Map(prev);
+            next.set(listing.id, mins);
+            return next;
+          });
+        }
+        if (!cancelled) await new Promise(r => setTimeout(r, 100));
+      }
+    })();
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.preferences?.latitude, user?.preferences?.longitude, (user?.preferences?.commute as string[] | undefined)?.[0], listings]);
+
   // Check if user has learned preferences saved to database (memoized for stable reference)
   const hasLearnedPreferences = useMemo(() => {
     return user?.preferences?.learned?.preferredAmenities &&
@@ -418,7 +458,12 @@ export default function SwipePage() {
     }
 
     // Rank all listings (including already-reviewed ones)
-    const allRanked = rankListings(filteredListings, userPreferences, []);
+    const allRanked = rankListings(
+      filteredListings,
+      userPreferences,
+      [],
+      commuteMinutes.size > 0 ? commuteMinutes : undefined
+    );
 
     // Split into reviewed and new listings
     const reviewedListings = allRanked.filter(listing => initialReviewedIds.has(listing.id));
@@ -426,7 +471,7 @@ export default function SwipePage() {
 
     // Return with reviewed first, then new (keeps count consistent - e.g., 1-29 instead of 1-19)
     return [...reviewedListings, ...newListings];
-  }, [listings, user, sessionLearnedPreferences, initialReviewedIds]);
+  }, [listings, user, sessionLearnedPreferences, initialReviewedIds, commuteMinutes]);
 
 
   // Show loading screen while contexts initialize to prevent navigation loops
@@ -617,6 +662,7 @@ export default function SwipePage() {
             showMatchScores={totalSwipes >= 5 || hasPersonalized || hasLearnedPreferences}
             onSwipeCountUpdate={handleSwipeCountUpdate}
             onStartOver={handleStartOver}
+            commuteMinutes={commuteMinutes}
           />
         ) : (
           <div className="text-center py-12">

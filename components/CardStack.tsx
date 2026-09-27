@@ -36,9 +36,10 @@ interface CardStackProps {
   showMatchScores?: boolean;
   onSwipeCountUpdate?: () => void;
   onStartOver?: () => void;
+  commuteMinutes?: Map<string, number>;
 }
 
-export default function CardStack({ listings, onLikedChange, initialLikedIds = new Set(), onViewLiked, initialCompleted = false, onCompletedChange, showMatchScores = false, onSwipeCountUpdate, onStartOver }: CardStackProps) {
+export default function CardStack({ listings, onLikedChange, initialLikedIds = new Set(), onViewLiked, initialCompleted = false, onCompletedChange, showMatchScores = false, onSwipeCountUpdate, onStartOver, commuteMinutes }: CardStackProps) {
   const { user } = useUser();
   const [isMobile, setIsMobile] = useState(false);
   const [selectedLeaseTerm, setSelectedLeaseTerm] = useState<number | null>(null);
@@ -638,6 +639,7 @@ export default function CardStack({ listings, onLikedChange, initialLikedIds = n
                   matchScore={showMatchScores ? (item.data as any).matchScore : undefined}
                   scoreBreakdown={showMatchScores ? (item.data as any).scoreBreakdown : undefined}
                   selectedLeaseTerm={selectedLeaseTerm}
+                  commuteMinutes={commuteMinutes?.get(item.data.id)}
                 />
               );
             }

@@ -9,6 +9,7 @@ import { useUser } from "@/contexts/UserContext";
 import { textStyles, badgeStyles } from "@/lib/styles";
 import { extractAmenities } from "@/lib/recommendations";
 import { calculateDistance } from "@/lib/geocoding";
+import { commuteEmoji } from "@/lib/commute";
 
 // Dynamically import the map component to avoid SSR issues
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
@@ -23,8 +24,10 @@ interface SwipeableCardProps {
   isTopPick?: boolean;
   matchScore?: number;
   selectedLeaseTerm?: number | null;
+  commuteMinutes?: number;
   scoreBreakdown?: {
     distance?: { score: number; percentage: number; label: string };
+    commute?: { score: number; percentage: number; label: string };
     amenities?: { score: number; percentage: number; label: string };
     propertyFeatures?: { score: number; percentage: number; label: string };
     quality?: { score: number; percentage: number; label: string };
@@ -43,6 +46,7 @@ export default function SwipeableCard({
   isTopPick = false,
   matchScore,
   selectedLeaseTerm,
+  commuteMinutes,
   scoreBreakdown,
 }: SwipeableCardProps) {
   const [imageIndex, setImageIndex] = useState(0);
@@ -490,74 +494,64 @@ export default function SwipeableCard({
                 {scoreBreakdown && (
                   <div className={`${showScoreBreakdown ? 'visible' : 'invisible group-hover:visible'} absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 z-10`}>
                     <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Score Breakdown:</div>
-                    <div className="space-y-1.5">
-                      {scoreBreakdown.distance && (
-                        <div className={`flex items-center justify-between text-xs ${scoreBreakdown.distance.score === Math.max(
-                          scoreBreakdown.distance?.score || 0,
-                          scoreBreakdown.amenities?.score || 0,
-                          scoreBreakdown.propertyFeatures?.score || 0,
-                          scoreBreakdown.quality?.score || 0,
-                          scoreBreakdown.rating?.score || 0
-                        ) ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'}`}>
-                          <span>📍 Distance: {scoreBreakdown.distance.label}</span>
-                          <span>{Math.round(scoreBreakdown.distance.score)}pts</span>
+                    {(() => {
+                      const maxScore = Math.max(
+                        scoreBreakdown.distance?.score || 0,
+                        scoreBreakdown.commute?.score || 0,
+                        scoreBreakdown.amenities?.score || 0,
+                        scoreBreakdown.propertyFeatures?.score || 0,
+                        scoreBreakdown.quality?.score || 0,
+                        scoreBreakdown.rating?.score || 0
+                      );
+                      const rowCls = (score: number) =>
+                        `flex items-center justify-between text-xs ${score === maxScore ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'}`;
+                      return (
+                        <div className="space-y-1.5">
+                          {scoreBreakdown.commute && (
+                            <div className={rowCls(scoreBreakdown.commute.score)}>
+                              <span>{commuteEmoji(user?.preferences?.commute?.[0] as string || "car")} Commute: {scoreBreakdown.commute.label}</span>
+                              <span>{Math.round(scoreBreakdown.commute.score)}pts</span>
+                            </div>
+                          )}
+                          {scoreBreakdown.distance && (
+                            <div className={rowCls(scoreBreakdown.distance.score)}>
+                              <span>📍 Distance: {scoreBreakdown.distance.label}</span>
+                              <span>{Math.round(scoreBreakdown.distance.score)}pts</span>
+                            </div>
+                          )}
+                          {scoreBreakdown.amenities && (
+                            <div className={rowCls(scoreBreakdown.amenities.score)}>
+                              <span>✨ Amenities: {scoreBreakdown.amenities.label}</span>
+                              <span>{Math.round(scoreBreakdown.amenities.score)}pts</span>
+                            </div>
+                          )}
+                          {scoreBreakdown.propertyFeatures && (
+                            <div className={rowCls(scoreBreakdown.propertyFeatures.score)}>
+                              <span>🏗️ Features: {scoreBreakdown.propertyFeatures.label}</span>
+                              <span>{Math.round(scoreBreakdown.propertyFeatures.score)}pts</span>
+                            </div>
+                          )}
+                          {scoreBreakdown.quality && (
+                            <div className={rowCls(scoreBreakdown.quality.score)}>
+                              <span>📸 Quality: {scoreBreakdown.quality.label}</span>
+                              <span>{Math.round(scoreBreakdown.quality.score)}pts</span>
+                            </div>
+                          )}
+                          {scoreBreakdown.rating && (
+                            <div className={rowCls(scoreBreakdown.rating.score)}>
+                              <span>⭐ Rating: {scoreBreakdown.rating.label}</span>
+                              <span>{Math.round(scoreBreakdown.rating.score)}pts</span>
+                            </div>
+                          )}
+                          {scoreBreakdown.availability && (
+                            <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+                              <span>📅 Move-in: {scoreBreakdown.availability.label}</span>
+                              <span>{Math.round(scoreBreakdown.availability.score)}pts</span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {scoreBreakdown.amenities && (
-                        <div className={`flex items-center justify-between text-xs ${scoreBreakdown.amenities.score === Math.max(
-                          scoreBreakdown.distance?.score || 0,
-                          scoreBreakdown.amenities?.score || 0,
-                          scoreBreakdown.propertyFeatures?.score || 0,
-                          scoreBreakdown.quality?.score || 0,
-                          scoreBreakdown.rating?.score || 0
-                        ) ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'}`}>
-                          <span>✨ Amenities: {scoreBreakdown.amenities.label}</span>
-                          <span>{Math.round(scoreBreakdown.amenities.score)}pts</span>
-                        </div>
-                      )}
-                      {scoreBreakdown.propertyFeatures && (
-                        <div className={`flex items-center justify-between text-xs ${scoreBreakdown.propertyFeatures.score === Math.max(
-                          scoreBreakdown.distance?.score || 0,
-                          scoreBreakdown.amenities?.score || 0,
-                          scoreBreakdown.propertyFeatures?.score || 0,
-                          scoreBreakdown.quality?.score || 0,
-                          scoreBreakdown.rating?.score || 0
-                        ) ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'}`}>
-                          <span>🏗️ Features: {scoreBreakdown.propertyFeatures.label}</span>
-                          <span>{Math.round(scoreBreakdown.propertyFeatures.score)}pts</span>
-                        </div>
-                      )}
-                      {scoreBreakdown.quality && (
-                        <div className={`flex items-center justify-between text-xs ${scoreBreakdown.quality.score === Math.max(
-                          scoreBreakdown.distance?.score || 0,
-                          scoreBreakdown.amenities?.score || 0,
-                          scoreBreakdown.propertyFeatures?.score || 0,
-                          scoreBreakdown.quality?.score || 0,
-                          scoreBreakdown.rating?.score || 0
-                        ) ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'}`}>
-                          <span>📸 Quality: {scoreBreakdown.quality.label}</span>
-                          <span>{Math.round(scoreBreakdown.quality.score)}pts</span>
-                        </div>
-                      )}
-                      {scoreBreakdown.rating && (
-                        <div className={`flex items-center justify-between text-xs ${scoreBreakdown.rating.score === Math.max(
-                          scoreBreakdown.distance?.score || 0,
-                          scoreBreakdown.amenities?.score || 0,
-                          scoreBreakdown.propertyFeatures?.score || 0,
-                          scoreBreakdown.quality?.score || 0,
-                          scoreBreakdown.rating?.score || 0
-                        ) ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'}`}>
-                          <span>⭐ Rating: {scoreBreakdown.rating.label}</span>
-                          <span>{Math.round(scoreBreakdown.rating.score)}pts</span>
-                        </div>
-                      )}
-                      {scoreBreakdown.availability && (
-                        <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
-                          <span>📅 Move-in: {scoreBreakdown.availability.label}</span>
-                          <span>{Math.round(scoreBreakdown.availability.score)}pts</span>
-                        </div>
-                      )}
-                    </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -724,7 +718,14 @@ export default function SwipeableCard({
 
             {/* Additional Details: Distance, Neighborhood, View, Pet Friendly */}
             <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
-              {distance !== null && (
+              {commuteMinutes !== undefined ? (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-medium">
+                  {commuteEmoji(user?.preferences?.commute?.[0] as string || "car")}{" "}
+                  {commuteMinutes < 60
+                    ? `${commuteMinutes} min`
+                    : `${Math.floor(commuteMinutes / 60)}h ${commuteMinutes % 60}m`}
+                </span>
+              ) : distance !== null ? (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-medium">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -732,7 +733,7 @@ export default function SwipeableCard({
                   </svg>
                   {distance.toFixed(1)} mi away
                 </span>
-              )}
+              ) : null}
               {'neighborhood' in listing && listing.neighborhood && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-xs font-medium">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
