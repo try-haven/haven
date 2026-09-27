@@ -63,6 +63,7 @@ interface User {
   name?: string;
   userType: UserType;
   preferences?: UserPreferences;
+  created_at?: string;
 }
 
 interface UserContextType {
@@ -237,6 +238,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           username: profile.username,
           name: profile.name,
           userType: profile.user_type as UserType,
+          created_at: profile.created_at,
           preferences: {
             address: profile.address,
             latitude: profile.latitude,

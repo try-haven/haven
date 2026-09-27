@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import CardStack from "@/components/CardStack";
 import SharedNavbar from "@/components/SharedNavbar";
 import PreferencesReminderPopup from "@/components/PreferencesReminderPopup";
+import OnboardingTips from "@/components/OnboardingTips";
 import { useUser } from "@/contexts/UserContext";
 import { initializeFakeRentalHistory } from "@/lib/data";
 import { useLikedListingsContext } from "@/contexts/LikedListingsContext";
@@ -437,8 +438,14 @@ export default function SwipePage() {
     );
   }
 
+  // New user = account created within the last 10 minutes
+  const isNewUser = !!user && !!user.created_at &&
+    Date.now() - new Date(user.created_at).getTime() < 10 * 60 * 1000;
+
   return (
     <div className="h-screen md:min-h-screen overflow-hidden md:overflow-auto bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <OnboardingTips isNewUser={isNewUser} />
+
       {/* Preferences Reminder Popup */}
       <PreferencesReminderPopup
         show={showPreferencesPopup}
