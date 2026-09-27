@@ -29,6 +29,7 @@ interface SwipeableCardProps {
     propertyFeatures?: { score: number; percentage: number; label: string };
     quality?: { score: number; percentage: number; label: string };
     rating?: { score: number; percentage: number; label: string };
+    availability?: { score: number; percentage: number; label: string };
   };
 }
 
@@ -548,6 +549,12 @@ export default function SwipeableCard({
                         ) ? 'font-bold text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'}`}>
                           <span>⭐ Rating: {scoreBreakdown.rating.label}</span>
                           <span>{Math.round(scoreBreakdown.rating.score)}pts</span>
+                        </div>
+                      )}
+                      {scoreBreakdown.availability && (
+                        <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+                          <span>📅 Move-in: {scoreBreakdown.availability.label}</span>
+                          <span>{Math.round(scoreBreakdown.availability.score)}pts</span>
                         </div>
                       )}
                     </div>

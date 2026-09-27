@@ -42,6 +42,7 @@ interface UserPreferences {
   requiredAmenities?: string[]; // Hard filter - listings must have these
   requiredView?: string[]; // Hard filter - view types required
   requiredNeighborhoods?: string[]; // Hard filter - specific neighborhoods
+  moveInDate?: string; // ISO date string (YYYY-MM-DD), optional
   weights?: ScoringWeights; // Custom scoring weights (defaults to 40/35/15/10)
   weightsLocked?: boolean; // If true, prevents ML model from overriding weights
   learned?: LearnedPreferences; // Learned preferences from swipe behavior
@@ -53,6 +54,7 @@ export interface ScoreBreakdown {
   propertyFeatures?: { score: number; percentage: number; label: string }; // e.g., "850 sqft, Built 2015"
   quality?: { score: number; percentage: number; label: string };   // e.g., "High quality" or "6 photos"
   rating?: { score: number; percentage: number; label: string };    // e.g., "4.2★" or "No reviews"
+  availability?: { score: number; percentage: number; label: string }; // e.g., "Available on time"
 }
 
 type ListingWithScore = (ApartmentListing | NYCApartmentListing) & {
@@ -490,6 +492,40 @@ function calculateMatchScore(
       percentage: 50,
       label: "No reviews"
     };
+  }
+
+  // Move-in date compatibility (weight: 15, only when user has set a move-in date)
+  if (preferences.moveInDate) {
+    const moveIn = new Date(preferences.moveInDate).getTime();
+    const availStr = 'dateAvailable' in listing
+      ? (listing as any).dateAvailable
+      : (listing as any).availableFrom;
+    const listingAvail = availStr ? new Date(availStr).getTime() : null;
+
+    if (listingAvail !== null) {
+      const daysLate = Math.max(0, (listingAvail - moveIn) / (1000 * 60 * 60 * 24));
+      const availScore =
+        daysLate === 0 ? 1.0 :
+        daysLate <= 14  ? 0.9 :
+        daysLate <= 30  ? 0.7 :
+        daysLate <= 60  ? 0.5 :
+        daysLate <= 90  ? 0.25 : 0.05;
+
+      const availWeight = 15;
+      addScore(availWeight, availScore);
+
+      const label =
+        daysLate === 0         ? 'Available on time' :
+        daysLate <= 14         ? `${Math.round(daysLate)}d after move-in` :
+        daysLate <= 60         ? `${Math.round(daysLate / 7)}wk after move-in` :
+                                 `${Math.round(daysLate / 30)}mo after move-in`;
+
+      breakdown.availability = {
+        score: availWeight * availScore,
+        percentage: availScore * 100,
+        label,
+      };
+    }
   }
 
   // Calculate final score (0-100)

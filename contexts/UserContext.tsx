@@ -40,6 +40,7 @@ interface UserPreferences {
   requiredAmenities?: string[]; // Hard filter - listings must have these
   requiredView?: string[]; // Hard filter - view types required
   requiredNeighborhoods?: string[]; // Hard filter - specific neighborhoods
+  moveInDate?: string; // ISO date string (YYYY-MM-DD), optional
   // Scoring weights (customizable - defaults to 40/35/15/10)
   weights?: ScoringWeights;
   weightsLocked?: boolean; // If true, ML model won't update weights

@@ -22,6 +22,7 @@ interface ApartmentPreferencesData {
   requiredAmenities?: string[];
   requiredView?: string[]; // e.g., ["City", "Water", "Park"]
   requiredNeighborhoods?: string[]; // e.g., ["Manhattan", "Brooklyn"]
+  moveInDate?: string; // ISO date string (YYYY-MM-DD)
   weights?: ScoringWeights;
 }
 
@@ -97,6 +98,7 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
   const [requiredAmenities, setRequiredAmenities] = useState<string[]>(initialPreferences?.requiredAmenities || []);
   const [requiredView, setRequiredView] = useState<string[]>(initialPreferences?.requiredView || []);
   const [requiredNeighborhoods, setRequiredNeighborhoods] = useState<string[]>(initialPreferences?.requiredNeighborhoods || []);
+  const [moveInDate, setMoveInDate] = useState<string>(initialPreferences?.moveInDate || '');
 
   // State for "no preference" toggles - default to false so users see the controls
   const [noPricePreference, setNoPricePreference] = useState(false);
@@ -118,6 +120,7 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
     setRequiredAmenities([]);
     setRequiredView([]);
     setRequiredNeighborhoods([]);
+    setMoveInDate('');
 
     // Enable all "no preference" toggles
     setNoPricePreference(true);
@@ -182,6 +185,11 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
     // Add required neighborhoods (hard filter)
     if (requiredNeighborhoods.length > 0) {
       preferences.requiredNeighborhoods = requiredNeighborhoods;
+    }
+
+    // Add move-in date (optional, soft scoring signal)
+    if (moveInDate) {
+      preferences.moveInDate = moveInDate;
     }
 
     // Always use default scoring weights (user can customize in profile)
@@ -555,6 +563,34 @@ export default function ApartmentPreferences({ onNext, onBack, initialPreference
               </div>
             </div>
           )}
+        </div>
+
+        {/* Move-in Date */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-sm font-semibold text-gray-900 dark:text-white">
+              When are you hoping to move in?
+            </label>
+            {moveInDate && (
+              <button
+                type="button"
+                onClick={() => setMoveInDate('')}
+                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+            Optional — listings available around your move-in date will rank higher
+          </p>
+          <input
+            type="date"
+            value={moveInDate}
+            min={new Date().toISOString().split('T')[0]}
+            onChange={(e) => setMoveInDate(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
         </div>
 
         {/* Error Message */}
